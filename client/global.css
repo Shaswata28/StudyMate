@@ -53,6 +53,13 @@
     --sidebar-accent-foreground: 0 0% 9%;
     --sidebar-border: 0 0% 89.8%;
     --sidebar-ring: 0 0% 3.9%;
+
+    /* StudyMate brand colors */
+    --studymate-orange: #FEAE01;
+    --studymate-green: #1FC209;
+    --studymate-gray: #D9D9D9;
+    --studymate-darkgray: #404040;
+    --studymate-black: #1E1E1E;
   }
 
   .dark {
@@ -92,6 +99,13 @@
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 14.9%;
     --sidebar-ring: 0 0% 83.1%;
+
+    /* StudyMate brand colors in dark mode */
+    --studymate-orange: #FFC933;
+    --studymate-green: #4FD96F;
+    --studymate-gray: #404040;
+    --studymate-darkgray: #B0B0B0;
+    --studymate-black: #F5F5F5;
   }
 }
 
@@ -113,5 +127,49 @@
   code {
     overflow-x: auto;
     white-space: pre;
+  }
+}
+
+@layer utilities {
+  /* Smooth expand/collapse animation */
+  .expand-collapse {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Button micro-interactions */
+  .btn-micro {
+    @apply transition-all duration-200;
+  }
+
+  .btn-micro:hover {
+    @apply scale-105 opacity-90;
+  }
+
+  .btn-micro:active {
+    @apply scale-95;
+  }
+
+  /* Loading skeleton animation */
+  .skeleton-loading {
+    @apply animate-pulse bg-muted rounded-md;
+  }
+
+  /* Smooth scroll behavior */
+  .smooth-scroll {
+    @apply scroll-smooth;
+  }
+
+  /* Toast notification styles */
+  .toast-enter {
+    @apply animate-in slide-in-from-right-5 duration-200;
+  }
+
+  .toast-exit {
+    @apply animate-out slide-out-to-right-5 duration-200;
+  }
+
+  /* Message bubble animation */
+  .message-enter {
+    @apply animate-in fade-in slide-in-from-bottom-2 duration-300;
   }
 }

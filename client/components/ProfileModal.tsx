@@ -48,52 +48,52 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-lg w-full max-w-[700px] max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-[9999] p-4 transition-colors">
+      <div className="bg-white dark:bg-slate-800 rounded-lg w-full max-w-[700px] max-h-[80vh] overflow-hidden flex flex-col shadow-2xl dark:shadow-2xl transition-colors">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/10">
-          <h2 className="font-audiowide text-[24px] tracking-[2.4px] text-black">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-black/10 dark:border-slate-700">
+          <h2 className="font-audiowide text-[24px] tracking-[2.4px] text-black dark:text-white">
             {activeTab === "settings" && "Settings"}
             {activeTab === "about" && "About StudyMate"}
             {activeTab === "help" && "Help & Support"}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors btn-micro"
             aria-label="Close modal"
           >
-            <X className="w-6 h-6 text-black" strokeWidth={2} />
+            <X className="w-6 h-6 text-black dark:text-white" strokeWidth={2} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-black/10 px-6">
+        <div className="flex border-b border-black/10 dark:border-slate-700 px-6">
           <button
             onClick={() => setActiveTab("settings")}
-            className={`px-4 py-3 font-audiowide text-[14px] tracking-[1.4px] border-b-2 transition-colors ${
+            className={`px-4 py-3 font-audiowide text-[14px] tracking-[1.4px] border-b-2 transition-colors btn-micro ${
               activeTab === "settings"
-                ? "border-black text-black"
-                : "border-transparent text-[#666] hover:text-black"
+                ? "border-black dark:border-white text-black dark:text-white"
+                : "border-transparent text-[#666] dark:text-gray-400 hover:text-black dark:hover:text-white"
             }`}
           >
             Settings
           </button>
           <button
             onClick={() => setActiveTab("about")}
-            className={`px-4 py-3 font-audiowide text-[14px] tracking-[1.4px] border-b-2 transition-colors ${
+            className={`px-4 py-3 font-audiowide text-[14px] tracking-[1.4px] border-b-2 transition-colors btn-micro ${
               activeTab === "about"
-                ? "border-black text-black"
-                : "border-transparent text-[#666] hover:text-black"
+                ? "border-black dark:border-white text-black dark:text-white"
+                : "border-transparent text-[#666] dark:text-gray-400 hover:text-black dark:hover:text-white"
             }`}
           >
             About
           </button>
           <button
             onClick={() => setActiveTab("help")}
-            className={`px-4 py-3 font-audiowide text-[14px] tracking-[1.4px] border-b-2 transition-colors ${
+            className={`px-4 py-3 font-audiowide text-[14px] tracking-[1.4px] border-b-2 transition-colors btn-micro ${
               activeTab === "help"
-                ? "border-black text-black"
-                : "border-transparent text-[#666] hover:text-black"
+                ? "border-black dark:border-white text-black dark:text-white"
+                : "border-transparent text-[#666] dark:text-gray-400 hover:text-black dark:hover:text-white"
             }`}
           >
             Help
@@ -107,28 +107,30 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <div className="space-y-6">
               {/* Account Settings */}
               <div>
-                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black mb-4">
+                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black dark:text-white mb-4">
                   Account Settings
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="font-audiowide text-[13px] tracking-[1.3px] text-[#201F1F] block mb-2">
+                    <label htmlFor="fullname" className="font-audiowide text-[13px] tracking-[1.3px] text-[#201F1F] dark:text-gray-300 block mb-2">
                       Full Name
                     </label>
                     <input
+                      id="fullname"
                       type="text"
                       defaultValue="Arnob Das"
-                      className="w-full px-3 py-2 border border-black rounded font-roboto text-[13px] focus:outline-none focus:ring-2 focus:ring-black"
+                      className="w-full px-3 py-2 border-2 border-black dark:border-white rounded bg-white dark:bg-slate-700 font-roboto text-[13px] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-studymate-orange dark:focus:ring-studymate-green transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="font-audiowide text-[13px] tracking-[1.3px] text-[#201F1F] block mb-2">
+                    <label htmlFor="email" className="font-audiowide text-[13px] tracking-[1.3px] text-[#201F1F] dark:text-gray-300 block mb-2">
                       Email
                     </label>
                     <input
+                      id="email"
                       type="email"
                       defaultValue="arnob@example.com"
-                      className="w-full px-3 py-2 border border-black rounded font-roboto text-[13px] focus:outline-none focus:ring-2 focus:ring-black"
+                      className="w-full px-3 py-2 border-2 border-black dark:border-white rounded bg-white dark:bg-slate-700 font-roboto text-[13px] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-studymate-orange dark:focus:ring-studymate-green transition-colors"
                     />
                   </div>
                 </div>
@@ -136,7 +138,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
               {/* Notification Settings */}
               <div>
-                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black mb-4">
+                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black dark:text-white mb-4">
                   Notifications
                 </h3>
                 <div className="space-y-3">
@@ -144,9 +146,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     <input
                       type="checkbox"
                       defaultChecked
-                      className="w-4 h-4 rounded accent-black"
+                      className="w-4 h-4 rounded border-2 border-black dark:border-white accent-studymate-black dark:accent-white"
                     />
-                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black">
+                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black dark:text-white">
                       Email notifications
                     </span>
                   </label>
@@ -154,18 +156,18 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     <input
                       type="checkbox"
                       defaultChecked
-                      className="w-4 h-4 rounded accent-black"
+                      className="w-4 h-4 rounded border-2 border-black dark:border-white accent-studymate-black dark:accent-white"
                     />
-                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black">
+                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black dark:text-white">
                       Progress updates
                     </span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      className="w-4 h-4 rounded accent-black"
+                      className="w-4 h-4 rounded border-2 border-black dark:border-white accent-studymate-black dark:accent-white"
                     />
-                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black">
+                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black dark:text-white">
                       Course announcements
                     </span>
                   </label>
@@ -174,7 +176,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
               {/* Privacy Settings */}
               <div>
-                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black mb-4">
+                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black dark:text-white mb-4">
                   Privacy
                 </h3>
                 <div className="space-y-3">
@@ -183,9 +185,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                       type="radio"
                       name="privacy"
                       defaultChecked
-                      className="w-4 h-4 accent-black"
+                      className="w-4 h-4 accent-studymate-black dark:accent-white"
                     />
-                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black">
+                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black dark:text-white">
                       Public profile
                     </span>
                   </label>
@@ -193,9 +195,9 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     <input
                       type="radio"
                       name="privacy"
-                      className="w-4 h-4 accent-black"
+                      className="w-4 h-4 accent-studymate-black dark:accent-white"
                     />
-                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black">
+                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black dark:text-white">
                       Private profile
                     </span>
                   </label>
@@ -203,7 +205,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               </div>
 
               {/* Save Button */}
-              <button className="w-full px-4 py-2 bg-black text-white font-audiowide text-[13px] tracking-[1.3px] rounded hover:bg-opacity-90 transition-colors">
+              <button className="w-full px-4 py-2 bg-studymate-black dark:bg-white text-white dark:text-black font-audiowide text-[13px] tracking-[1.3px] rounded hover:shadow-lg dark:hover:shadow-lg transition-all duration-200 btn-micro">
                 Save Changes
               </button>
             </div>
@@ -213,20 +215,20 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           {activeTab === "about" && (
             <div className="space-y-5">
               <section>
-                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black mb-2">
+                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black dark:text-white mb-2">
                   What is StudyMate?
                 </h3>
-                <p className="font-roboto text-[13px] leading-relaxed text-[#404040]">
+                <p className="font-roboto text-[13px] leading-relaxed text-[#404040] dark:text-gray-300">
                   StudyMate is an AI-powered learning companion designed to help
                   students personalize their study experience.
                 </p>
               </section>
 
               <section>
-                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black mb-2">
+                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black dark:text-white mb-2">
                   Our Mission
                 </h3>
-                <p className="font-roboto text-[13px] leading-relaxed text-[#404040]">
+                <p className="font-roboto text-[13px] leading-relaxed text-[#404040] dark:text-gray-300">
                   We believe every student learns differently. Our mission is to provide
                   an intelligent learning platform that adapts to your unique learning
                   style.
@@ -234,10 +236,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               </section>
 
               <section>
-                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black mb-2">
+                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black dark:text-white mb-2">
                   Key Features
                 </h3>
-                <ul className="font-roboto text-[13px] leading-relaxed text-[#404040] space-y-1">
+                <ul className="font-roboto text-[13px] leading-relaxed text-[#404040] dark:text-gray-300 space-y-1">
                   <li>• AI-powered course management</li>
                   <li>• Adaptive learning based on preferences</li>
                   <li>• Personalized explanations</li>
@@ -247,23 +249,23 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               </section>
 
               <section>
-                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black mb-2">
+                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black dark:text-white mb-2">
                   Version
                 </h3>
-                <p className="font-roboto text-[13px] text-[#404040]">
+                <p className="font-roboto text-[13px] text-[#404040] dark:text-gray-300">
                   StudyMate v1.0.0
                 </p>
               </section>
 
               <section>
-                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black mb-2">
+                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black dark:text-white mb-2">
                   Contact
                 </h3>
-                <p className="font-roboto text-[13px] text-[#404040]">
+                <p className="font-roboto text-[13px] text-[#404040] dark:text-gray-300">
                   Email:{" "}
                   <a
                     href="mailto:support@studymate.com"
-                    className="text-blue-600 hover:underline"
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     support@studymate.com
                   </a>
@@ -275,26 +277,26 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           {/* Help Tab */}
           {activeTab === "help" && (
             <div className="space-y-3">
-              <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black mb-4">
+              <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black dark:text-white mb-4">
                 Frequently Asked Questions
               </h3>
 
               {faqs.map((faq, index) => (
                 <div
                   key={index}
-                  className="border border-black/20 rounded overflow-hidden"
+                  className="border border-black/20 dark:border-slate-600 rounded overflow-hidden hover:shadow-md dark:hover:shadow-lg transition-shadow"
                 >
                   <button
                     onClick={() =>
                       setExpandedFAQ(expandedFAQ === index ? null : index)
                     }
-                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-left btn-micro"
                   >
-                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black">
+                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black dark:text-white">
                       {faq.question}
                     </span>
                     <svg
-                      className={`w-4 h-4 transition-transform flex-shrink-0 ml-2 ${
+                      className={`w-4 h-4 transition-transform flex-shrink-0 ml-2 text-black dark:text-white ${
                         expandedFAQ === index ? "rotate-180" : ""
                       }`}
                       fill="none"
@@ -311,8 +313,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                   </button>
 
                   {expandedFAQ === index && (
-                    <div className="px-4 py-3 bg-gray-50 border-t border-black/20">
-                      <p className="font-roboto text-[12px] leading-relaxed text-[#404040]">
+                    <div className="px-4 py-3 bg-gray-50 dark:bg-slate-700 border-t border-black/20 dark:border-slate-600">
+                      <p className="font-roboto text-[12px] leading-relaxed text-[#404040] dark:text-gray-300">
                         {faq.answer}
                       </p>
                     </div>
@@ -320,13 +322,13 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 </div>
               ))}
 
-              <div className="mt-6 p-4 bg-gray-50 rounded">
-                <p className="font-audiowide text-[14px] tracking-[1.4px] text-black mb-3">
+              <div className="mt-6 p-4 bg-gray-50 dark:bg-slate-700 rounded">
+                <p className="font-audiowide text-[14px] tracking-[1.4px] text-black dark:text-white mb-3">
                   Still need help?
                 </p>
                 <a
                   href="mailto:support@studymate.com"
-                  className="inline-block px-4 py-2 bg-black text-white font-audiowide text-[12px] tracking-[1.2px] rounded hover:bg-opacity-90 transition-colors"
+                  className="inline-block px-4 py-2 bg-studymate-black dark:bg-white text-white dark:text-black font-audiowide text-[12px] tracking-[1.2px] rounded hover:shadow-lg dark:hover:shadow-lg transition-all duration-200 btn-micro"
                 >
                   Contact Support
                 </a>
