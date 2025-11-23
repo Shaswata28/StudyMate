@@ -24,5 +24,11 @@ dist-ssr
 *.sw?
 
 .config/
-!.env
+
+# Environment variables (contains secrets)
 .env
+.env.local
+.env.*.local
+
+# Keep example file for reference
+!.env.example
