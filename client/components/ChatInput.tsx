@@ -1,5 +1,5 @@
 import { Plus, Send, Loader } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface ChatInputProps {
   onSend?: (message: string) => void;
@@ -11,6 +11,16 @@ export default function ChatInput({ onSend, onFileUpload, isLoading = false }: C
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 100)}px`;
+    }
+  }, [message]);
 
   const handleSend = () => {
     if (message.trim() && !isLoading) {
@@ -43,9 +53,16 @@ export default function ChatInput({ onSend, onFileUpload, isLoading = false }: C
     }
   };
 
+  // Determine text size based on message length
+  const getTextSizeClass = () => {
+    if (message.length > 200) return "text-base";
+    if (message.length > 100) return "text-lg";
+    return "text-xl";
+  };
+
   return (
     <div className="w-full max-w-[609px] mx-auto">
-      <div className="relative flex items-center bg-studymate-gray dark:bg-slate-800 rounded-[26px] shadow-lg h-[52px] px-4 transition-all duration-200 border border-transparent dark:border-slate-700 hover:shadow-xl">
+      <div className="relative flex items-end bg-studymate-gray dark:bg-slate-800 rounded-[26px] shadow-lg min-h-[52px] px-4 py-3 transition-all duration-200 border border-transparent dark:border-slate-700 hover:shadow-xl">
         {/* Hidden file input */}
         <input
           ref={fileInputRef}
@@ -62,7 +79,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading = false }: C
         <button
           onClick={handleFileClick}
           disabled={isLoading || isUploading}
-          className="flex-shrink-0 mr-3 transition-all duration-200 btn-micro disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-shrink-0 mr-3 mb-1 transition-all duration-200 btn-micro disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Attach file"
           aria-busy={isUploading}
         >
@@ -73,15 +90,16 @@ export default function ChatInput({ onSend, onFileUpload, isLoading = false }: C
           )}
         </button>
 
-        {/* Input Field */}
-        <input
-          type="text"
+        {/* Textarea Field */}
+        <textarea
+          ref={textareaRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyPress}
           placeholder="Ask anything"
           disabled={isLoading}
-          className="flex-1 bg-transparent outline-none font-audiowide text-xl text-studymate-darkgray dark:text-gray-300 placeholder:text-studymate-darkgray dark:placeholder:text-gray-500 tracking-[2px] disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          rows={1}
+          className={`flex-1 bg-transparent outline-none font-audiowide ${getTextSizeClass()} text-studymate-darkgray dark:text-gray-300 placeholder:text-studymate-darkgray dark:placeholder:text-gray-500 tracking-[2px] disabled:opacity-50 disabled:cursor-not-allowed transition-all resize-none overflow-y-auto max-h-[100px] leading-relaxed scrollbar-thin scrollbar-thumb-studymate-darkgray dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-studymate-black dark:hover:scrollbar-thumb-gray-500`}
           aria-label="Message input"
         />
 
@@ -89,7 +107,7 @@ export default function ChatInput({ onSend, onFileUpload, isLoading = false }: C
         <button
           onClick={handleSend}
           disabled={!message.trim() || isLoading}
-          className="flex-shrink-0 ml-3 transition-all duration-200 btn-micro disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-shrink-0 ml-3 mb-1 transition-all duration-200 btn-micro disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Send message"
           aria-busy={isLoading}
         >

@@ -6,6 +6,7 @@ interface Message {
   text: string;
   isAI: boolean;
   timestamp?: Date;
+  attachments?: { name: string; type: string }[];
 }
 
 interface ChatContainerProps {
@@ -44,7 +45,7 @@ export default function ChatContainer({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col gap-4 smooth-scroll overflow-y-auto flex-1"
+      className="flex flex-col gap-4 smooth-scroll overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-studymate-darkgray dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-studymate-black dark:hover:scrollbar-thumb-gray-500"
     >
       {messages.map((message) => (
         <ChatMessage
@@ -53,6 +54,7 @@ export default function ChatContainer({
           text={message.text}
           isAI={message.isAI}
           timestamp={message.timestamp}
+          attachments={message.attachments}
         />
       ))}
 

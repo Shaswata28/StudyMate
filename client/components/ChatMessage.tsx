@@ -5,12 +5,14 @@ interface ChatMessageProps {
   text: string;
   isAI: boolean;
   timestamp?: Date;
+  attachments?: { name: string; type: string }[];
 }
 
 export default function ChatMessage({
   text,
   isAI,
   timestamp,
+  attachments,
 }: ChatMessageProps) {
   const formattedContent = useMemo(() => {
     if (!isAI) return text;
@@ -73,6 +75,25 @@ export default function ChatMessage({
             : "bg-studymate-black dark:bg-studymate-black text-white rounded-tr-none"
         }`}
       >
+        {/* Show attachments if present (for user messages) */}
+        {attachments && attachments.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {attachments.map((file, index) => (
+              <div
+                key={index}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-audiowide ${
+                  isAI
+                    ? "bg-gray-200 dark:bg-slate-700 text-black dark:text-white"
+                    : "bg-white/20 text-white"
+                }`}
+              >
+                <span>{getFileIcon(file.type)}</span>
+                <span className="truncate max-w-[150px]">{file.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="font-audiowide text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">
           {formattedContent}
         </div>
@@ -92,6 +113,14 @@ export default function ChatMessage({
       </div>
     </div>
   );
+}
+
+function getFileIcon(type: string): string {
+  if (type.includes("pdf")) return "📄";
+  if (type.includes("image")) return "🖼️";
+  if (type.includes("video")) return "🎥";
+  if (type.includes("word")) return "📝";
+  return "📋";
 }
 
 function parseInlineMarkdown(text: string): React.ReactNode {

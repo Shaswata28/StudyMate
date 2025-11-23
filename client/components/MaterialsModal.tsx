@@ -11,9 +11,10 @@ interface MaterialsModalProps {
   isOpen: boolean;
   onClose: () => void;
   files: UploadedFile[];
+  onRemoveFile?: (fileId: string) => void;
 }
 
-export default function MaterialsModal({ isOpen, onClose, files }: MaterialsModalProps) {
+export default function MaterialsModal({ isOpen, onClose, files, onRemoveFile }: MaterialsModalProps) {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -40,7 +41,7 @@ export default function MaterialsModal({ isOpen, onClose, files }: MaterialsModa
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-[639px] mx-4 bg-white dark:bg-slate-800 rounded-[20px] sm:rounded-[30px] border-2 border-black dark:border-white shadow-2xl p-6 sm:p-8 message-enter max-h-[80vh] overflow-y-auto">
+      <div className="relative w-full max-w-[639px] mx-4 bg-white dark:bg-slate-800 rounded-[20px] sm:rounded-[30px] border-2 border-black dark:border-white shadow-2xl p-6 sm:p-8 message-enter max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-studymate-darkgray dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-studymate-black dark:hover:scrollbar-thumb-gray-500">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -139,12 +140,23 @@ export default function MaterialsModal({ isOpen, onClose, files }: MaterialsModa
                           </p>
                         </div>
                       </div>
-                      <button
-                        className="ml-2 p-2 opacity-0 group-hover:opacity-100 hover:bg-white dark:hover:bg-slate-600 rounded transition-all duration-200 flex-shrink-0 btn-micro"
-                        aria-label={`Download ${file.name}`}
-                      >
-                        <Download className="w-4 h-4 sm:w-5 sm:h-5 text-studymate-orange dark:text-studymate-green" strokeWidth={2} />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          className="p-2 hover:bg-white dark:hover:bg-slate-600 rounded transition-all duration-200 flex-shrink-0 btn-micro"
+                          aria-label={`Download ${file.name}`}
+                        >
+                          <Download className="w-4 h-4 sm:w-5 sm:h-5 text-studymate-orange dark:text-studymate-green" strokeWidth={2} />
+                        </button>
+                        {onRemoveFile && (
+                          <button
+                            onClick={() => onRemoveFile(file.id)}
+                            className="p-2 hover:bg-red-100 dark:hover:bg-red-950/30 rounded transition-all duration-200 flex-shrink-0 btn-micro"
+                            aria-label={`Remove ${file.name}`}
+                          >
+                            <X className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400" strokeWidth={2} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))
                 )}
@@ -169,12 +181,23 @@ export default function MaterialsModal({ isOpen, onClose, files }: MaterialsModa
                         <p className="font-roboto text-xs text-gray-500 dark:text-gray-400">
                           {file.type.split("/")[1] || "file"}
                         </p>
-                        <button
-                          className="p-1 opacity-0 group-hover:opacity-100 hover:bg-white dark:hover:bg-slate-600 rounded transition-all duration-200 btn-micro"
-                          aria-label={`Download ${file.name}`}
-                        >
-                          <Download className="w-3 h-3 sm:w-4 sm:h-4 text-studymate-orange dark:text-studymate-green" strokeWidth={2} />
-                        </button>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            className="p-1 hover:bg-white dark:hover:bg-slate-600 rounded transition-all duration-200 btn-micro"
+                            aria-label={`Download ${file.name}`}
+                          >
+                            <Download className="w-3 h-3 sm:w-4 sm:h-4 text-studymate-orange dark:text-studymate-green" strokeWidth={2} />
+                          </button>
+                          {onRemoveFile && (
+                            <button
+                              onClick={() => onRemoveFile(file.id)}
+                              className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded transition-all duration-200 btn-micro"
+                              aria-label={`Remove ${file.name}`}
+                            >
+                              <X className="w-3 h-3 sm:w-4 sm:h-4 text-red-600 dark:text-red-400" strokeWidth={2} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))

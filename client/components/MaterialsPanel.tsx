@@ -113,7 +113,7 @@ export default function MaterialsPanel({ files, isOpen, onToggle }: MaterialsPan
 
               {/* Files Display */}
               {viewMode === "list" ? (
-                <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                <div className="space-y-3 max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-studymate-darkgray dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-studymate-black dark:hover:scrollbar-thumb-gray-500">
                   {filteredFiles.length === 0 ? (
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       No materials match your search
@@ -148,7 +148,7 @@ export default function MaterialsPanel({ files, isOpen, onToggle }: MaterialsPan
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-studymate-darkgray dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-studymate-black dark:hover:scrollbar-thumb-gray-500">
                   {filteredFiles.length === 0 ? (
                     <p className="col-span-full text-sm text-gray-500 dark:text-gray-400">
                       No materials match your search

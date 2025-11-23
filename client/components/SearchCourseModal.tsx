@@ -100,7 +100,7 @@ export default function SearchCourseModal({
               </p>
             </div>
           ) : (
-            <div className="space-y-2 max-h-[350px] overflow-y-auto">
+            <div className="space-y-2 max-h-[350px] overflow-y-auto scrollbar-thin scrollbar-thumb-studymate-darkgray dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-studymate-black dark:hover:scrollbar-thumb-gray-500">
               {filteredCourses.map((course) => (
                 <button
                   key={course.id}

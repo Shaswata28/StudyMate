@@ -4,12 +4,13 @@ Manages Gemini client initialization, conversation formatting, and API calls.
 """
 
 import logging
+import base64
 from typing import List, Optional
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
 from google.api_core import exceptions as google_exceptions
 
-from models.schemas import Message
+from models.schemas import Message, FileAttachment
 from config import config
 
 logger = logging.getLogger(__name__)
@@ -95,17 +96,48 @@ class GeminiService:
         logger.debug(f"Formatted {len(formatted_history)} messages for Gemini API")
         return formatted_history
     
+    def _prepare_file_parts(self, attachments: List[FileAttachment]) -> List[dict]:
+        """
+        Convert file attachments to Gemini-compatible format.
+        
+        Args:
+            attachments: List of FileAttachment objects with base64 data.
+        
+        Returns:
+            List of file parts formatted for Gemini API.
+        """
+        file_parts = []
+        for attachment in attachments:
+            try:
+                # Decode base64 data
+                file_data = base64.b64decode(attachment.data)
+                
+                # Create file part for Gemini
+                file_parts.append({
+                    "mime_type": attachment.mime_type,
+                    "data": file_data
+                })
+                
+                logger.debug(f"Prepared file: {attachment.filename} ({attachment.mime_type})")
+            except Exception as e:
+                logger.error(f"Failed to prepare file {attachment.filename}: {str(e)}")
+                raise GeminiServiceError(f"Failed to process file: {attachment.filename}")
+        
+        return file_parts
+    
     def generate_response(
         self,
         message: str,
-        history: Optional[List[Message]] = None
+        history: Optional[List[Message]] = None,
+        attachments: Optional[List[FileAttachment]] = None
     ) -> str:
         """
-        Call Gemini API with a message and optional conversation history.
+        Call Gemini API with a message, optional conversation history, and optional file attachments.
         
         Args:
             message: The user's message to send to Gemini.
             history: Optional list of previous messages for context.
+            attachments: Optional list of file attachments (images/PDFs).
         
         Returns:
             The AI-generated response text.
@@ -123,14 +155,26 @@ class GeminiService:
             if history:
                 formatted_history = self.format_conversation_history(history)
             
+            # Prepare content parts (text + files)
+            content_parts = []
+            
+            # Add file attachments first (if any)
+            if attachments:
+                file_parts = self._prepare_file_parts(attachments)
+                content_parts.extend(file_parts)
+                logger.info(f"Added {len(file_parts)} file attachment(s) to request")
+            
+            # Add text message
+            content_parts.append(message)
+            
             # Start a chat session with history
             chat = self.model.start_chat(history=formatted_history)
             
-            # Send the message and get response with timeout
-            logger.info(f"Sending message to Gemini API (history length: {len(formatted_history)})")
+            # Send the message with attachments and get response with timeout
+            logger.info(f"Sending message to Gemini API (history: {len(formatted_history)}, attachments: {len(attachments) if attachments else 0})")
             
             response = chat.send_message(
-                message,
+                content_parts,
                 request_options={"timeout": config.GEMINI_TIMEOUT}
             )
             

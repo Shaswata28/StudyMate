@@ -47,13 +47,15 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest):
         # Log incoming request
         logger.info(
             f"Chat request received - Message length: {len(chat_request.message)}, "
-            f"History length: {len(chat_request.history)}"
+            f"History length: {len(chat_request.history)}, "
+            f"Attachments: {len(chat_request.attachments)}"
         )
         
-        # Call Gemini service
+        # Call Gemini service with attachments
         response_text = gemini_service.generate_response(
             message=chat_request.message,
-            history=chat_request.history if chat_request.history else None
+            history=chat_request.history if chat_request.history else None,
+            attachments=chat_request.attachments if chat_request.attachments else None
         )
         
         # Create response with timestamp

@@ -18,6 +18,7 @@ interface UploadedFile {
   id: string;
   name: string;
   type: string;
+  file?: File; // Store the actual File object for sending to API
 }
 
 interface Message {
@@ -25,6 +26,7 @@ interface Message {
   text: string;
   isAI: boolean;
   timestamp?: Date;
+  attachments?: { name: string; type: string }[]; // Files attached to this message
 }
 
 export default function Dashboard() {
@@ -40,6 +42,7 @@ export default function Dashboard() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isMaterialsModalOpen, setIsMaterialsModalOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<UploadedFile[]>([]); // Files waiting to be sent
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
 
@@ -73,13 +76,34 @@ export default function Dashboard() {
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${index}`,
       name: file.name,
       type: file.type || "application/octet-stream",
+      file: file, // Store the actual File object
     }));
 
     setUploadedFiles((prev) => [...prev, ...newFiles]);
+    setPendingFiles((prev) => [...prev, ...newFiles]); // Add to pending files
+  };
 
-    if (!isMaterialsModalOpen) {
-      setIsMaterialsModalOpen(true);
-    }
+  const handleRemoveFile = (fileId: string) => {
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
+    setPendingFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
+
+  const handleRemovePendingFile = (fileId: string) => {
+    setPendingFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
+
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        // Remove the data:image/jpeg;base64, prefix
+        const base64Data = base64.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = (error) => reject(error);
+    });
   };
 
   const handleSendMessage = async (message: string) => {
@@ -88,6 +112,7 @@ export default function Dashboard() {
       text: message,
       isAI: false,
       timestamp: new Date(),
+      attachments: pendingFiles.map((f) => ({ name: f.name, type: f.type })),
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -100,6 +125,20 @@ export default function Dashboard() {
         content: msg.text,
       }));
 
+      // Convert pending files to base64 attachments
+      const attachments = await Promise.all(
+        pendingFiles
+          .filter((f) => f.file) // Only process files with File object
+          .map(async (f) => ({
+            filename: f.name,
+            mime_type: f.type,
+            data: await convertFileToBase64(f.file!),
+          }))
+      );
+
+      // Clear pending files after converting
+      setPendingFiles([]);
+
       // Call FastAPI backend
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -109,6 +148,7 @@ export default function Dashboard() {
         body: JSON.stringify({
           message: message,
           history: history,
+          attachments: attachments.length > 0 ? attachments : undefined,
         }),
       });
 
@@ -172,9 +212,11 @@ export default function Dashboard() {
             courseName={activeCourse.name}
             courseColor={activeCourse.color}
             uploadedFiles={uploadedFiles}
+            pendingFiles={pendingFiles}
             messages={messages}
             onSendMessage={handleSendMessage}
             onFileUpload={handleFileUpload}
+            onRemovePendingFile={handleRemovePendingFile}
             onMaterialsClick={() => setIsMaterialsModalOpen(true)}
             isLoadingResponse={isLoadingResponse}
           />
@@ -203,6 +245,7 @@ export default function Dashboard() {
         isOpen={isMaterialsModalOpen}
         onClose={() => setIsMaterialsModalOpen(false)}
         files={uploadedFiles}
+        onRemoveFile={handleRemoveFile}
       />
     </>
   );

@@ -20,9 +20,11 @@ interface WorkspaceProps {
   courseName: string;
   courseColor: string;
   uploadedFiles: UploadedFile[];
+  pendingFiles: UploadedFile[];
   messages: Message[];
   onSendMessage?: (message: string) => void;
   onFileUpload?: (files: File[]) => void;
+  onRemovePendingFile?: (fileId: string) => void;
   onMaterialsClick?: () => void;
   isLoadingResponse?: boolean;
 }
@@ -31,9 +33,11 @@ export default function Workspace({
   courseName,
   courseColor,
   uploadedFiles,
+  pendingFiles,
   messages,
   onSendMessage,
   onFileUpload,
+  onRemovePendingFile,
   onMaterialsClick,
   isLoadingResponse = false,
 }: WorkspaceProps) {
@@ -73,21 +77,34 @@ export default function Workspace({
 
       {/* Main Content Area - Messages and Files */}
       <div className="flex-1 overflow-hidden flex flex-col px-4 md:px-8 lg:px-12 py-6 md:py-8">
-        {/* Uploaded Files Display */}
-        {uploadedFiles.length > 0 && messages.length === 0 && !isLoadingResponse && (
-          <div className="flex flex-wrap gap-4 justify-center w-full mb-6">
-            {uploadedFiles.map((file) => (
-              <UploadedFileCard key={file.id} name={file.name} type={file.type} />
-            ))}
-          </div>
-        )}
-
         {/* Chat Container */}
         <ChatContainer messages={messages} isLoading={isLoadingResponse} />
       </div>
 
-      {/* Chat Input */}
+      {/* Chat Input Section */}
       <div className="border-t border-black/10 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 md:px-8 lg:px-12 py-6 md:py-8 flex-shrink-0">
+        {/* Pending Files Display - Above Chat Input (only show before sending) */}
+        {pendingFiles.length > 0 && (
+          <div className="flex flex-wrap gap-3 w-full mb-4 max-w-[609px] mx-auto">
+            {pendingFiles.slice(-3).map((file) => (
+              <UploadedFileCard 
+                key={file.id} 
+                name={file.name} 
+                type={file.type}
+                onRemove={() => onRemovePendingFile?.(file.id)}
+              />
+            ))}
+            {pendingFiles.length > 3 && (
+              <button
+                onClick={onMaterialsClick}
+                className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors font-audiowide text-xs tracking-[0.8px] text-studymate-darkgray dark:text-gray-300"
+              >
+                +{pendingFiles.length - 3} more
+              </button>
+            )}
+          </div>
+        )}
+        
         <ChatInput onSend={onSendMessage} onFileUpload={onFileUpload} isLoading={isLoadingResponse} />
       </div>
     </div>
