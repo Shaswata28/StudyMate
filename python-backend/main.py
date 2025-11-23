@@ -1,0 +1,92 @@
+"""
+FastAPI application entry point for Gemini AI chat integration.
+"""
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Import configuration - this will validate on import
+from config import config
+
+# Import rate limiter
+from middleware.rate_limiter import limiter, rate_limit_exceeded_handler
+
+# Import logging middleware
+from middleware.logging_middleware import LoggingMiddleware
+
+# Create FastAPI application
+app = FastAPI(
+    title="StudyMate AI Chat API",
+    description="FastAPI backend for Gemini-powered AI chat functionality",
+    version="1.0.0"
+)
+
+# Register rate limiter state
+app.state.limiter = limiter
+
+# Register custom rate limit exceeded handler
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# Register logging middleware
+app.add_middleware(LoggingMiddleware)
+
+# Configure CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=config.ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Register chat router
+from routers.chat import router as chat_router
+app.include_router(chat_router)
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "healthy", "service": "studymate-ai-chat"}
+
+@app.get("/api/test-rate-limit")
+@limiter.limit(f"{config.RATE_LIMIT_REQUESTS}/{config.RATE_LIMIT_WINDOW}seconds")
+async def test_rate_limit(request: Request):
+    """
+    Test endpoint to verify rate limiting is working.
+    This endpoint is rate-limited and will return 429 after exceeding the limit.
+    """
+    return {
+        "message": "Rate limiter is working!",
+        "limit": f"{config.RATE_LIMIT_REQUESTS} requests per {config.RATE_LIMIT_WINDOW} seconds"
+    }
+
+@app.on_event("startup")
+async def startup_event():
+    """Log startup confirmation and configuration status."""
+    logger.info("=" * 60)
+    logger.info("FastAPI backend starting up...")
+    logger.info("=" * 60)
+    logger.info("Configuration loaded successfully")
+    logger.info(f"  - Gemini Model: {config.GEMINI_MODEL}")
+    logger.info(f"  - Gemini Temperature: {config.GEMINI_TEMPERATURE}")
+    logger.info(f"  - Gemini Max Output Tokens: {config.GEMINI_MAX_OUTPUT_TOKENS}")
+    logger.info(f"  - Gemini Timeout: {config.GEMINI_TIMEOUT}s")
+    logger.info(f"  - Rate Limiting: {config.RATE_LIMIT_REQUESTS} requests per {config.RATE_LIMIT_WINDOW}s")
+    logger.info(f"  - CORS Allowed Origins: {', '.join(config.ALLOWED_ORIGINS)}")
+    logger.info(f"  - API Key Configured: {'Yes' if config.GEMINI_API_KEY else 'No'}")
+    logger.info("=" * 60)
+    logger.info("StudyMate AI Chat API is ready to accept requests")
+    logger.info("=" * 60)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

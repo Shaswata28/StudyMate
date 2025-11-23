@@ -17,14 +17,14 @@ This document outlines the requirements for integrating Google's Gemini API into
 
 ### Requirement 1
 
-**User Story:** As a student, I want to send messages to an AI tutor powered by Gemini, so that I can get intelligent responses about my course materials.
+**User Story:** As a student, I want to send messages to an AI tutor powered by Gemini, so that I can get intelligent responses.
 
 #### Acceptance Criteria
 
 1. WHEN a user types a message and clicks send, THE Chat Client SHALL transmit the message to the FastAPI Backend via HTTP request
-2. WHEN the FastAPI Backend receives a message, THE FastAPI Backend SHALL forward the request to the Gemini API with appropriate context
+2. WHEN the FastAPI Backend receives a message, THE FastAPI Backend SHALL forward the request to the Gemini API
 3. WHEN the Gemini API returns a response, THE FastAPI Backend SHALL relay the response back to the Chat Client
-4. WHEN the Chat Client receives an AI response, THE Chat Client SHALL display the response in the chat interface with proper formatting
+4. WHEN the Chat Client receives an AI response, THE Chat Client SHALL display the response in the chat interface with existing markdown formatting
 5. WHEN an error occurs during API communication, THE FastAPI Backend SHALL return a structured error response with appropriate HTTP status codes
 
 ### Requirement 2
@@ -36,7 +36,7 @@ This document outlines the requirements for integrating Google's Gemini API into
 1. WHEN the FastAPI Backend starts, THE FastAPI Backend SHALL initialize a rate limiter with configurable request limits per time window
 2. WHEN a chat request arrives, THE FastAPI Backend SHALL check if the rate limit has been exceeded before calling the Gemini API
 3. WHEN the rate limit is exceeded, THE FastAPI Backend SHALL return an HTTP 429 status with a user-friendly error message
-4. WHEN the rate limit error is received, THE Chat Client SHALL display a message informing the user to try again later
+4. WHEN the rate limit error is received, THE Chat Client SHALL display the error as an AI message in the chat interface
 5. WHEN the time window resets, THE FastAPI Backend SHALL allow new requests to proceed
 
 ### Requirement 3
@@ -83,8 +83,8 @@ This document outlines the requirements for integrating Google's Gemini API into
 
 1. WHEN the Gemini API returns an error, THE FastAPI Backend SHALL parse the error and return a user-friendly message
 2. WHEN network timeouts occur, THE FastAPI Backend SHALL return an appropriate error response after a configured timeout period
-3. WHEN the FastAPI Backend is unreachable, THE Chat Client SHALL display a connection error message to the user
-4. WHEN API quota is exceeded, THE system SHALL inform the user that the service is temporarily unavailable
+3. WHEN the FastAPI Backend is unreachable, THE Chat Client SHALL display error messages as AI messages in the chat interface
+4. WHEN API quota is exceeded, THE Chat Client SHALL display a message informing the user that the service is temporarily unavailable
 5. WHEN validation errors occur, THE FastAPI Backend SHALL return detailed error messages indicating which fields are invalid
 
 ### Requirement 7

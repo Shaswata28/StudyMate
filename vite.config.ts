@@ -12,6 +12,12 @@ export default defineConfig(({ mode }) => ({
       allow: ["./","./client", "./shared"],
       deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "server/**"],
     },
+    proxy: {
+      '/api/chat': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     outDir: "dist/spa",
@@ -33,7 +39,15 @@ function expressPlugin(): Plugin {
       const app = createServer();
 
       // Add Express app as middleware to Vite dev server
-      server.middlewares.use(app);
+      // Use a conditional middleware to skip /api/chat (handled by proxy)
+      server.middlewares.use((req, res, next) => {
+        if (req.url?.startsWith('/api/chat')) {
+          // Let Vite's proxy handle this
+          return next();
+        }
+        // Pass to Express for other routes
+        app(req, res, next);
+      });
     },
   };
 }

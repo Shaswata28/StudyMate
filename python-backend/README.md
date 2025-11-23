@@ -1,0 +1,324 @@
+# StudyMate AI Chat - FastAPI Backend
+
+Python FastAPI backend service for Gemini-powered AI chat functionality.
+
+## Overview
+
+This FastAPI backend integrates Google's Gemini API to provide AI-powered chat capabilities for the StudyMate application. It runs alongside the existing Express server, handling AI chat requests while the Express server manages other application routes.
+
+## Project Structure
+
+```
+python-backend/
+├── main.py                 # FastAPI app entry point
+├── config.py              # Configuration management
+├── requirements.txt       # Python dependencies
+├── .env.example          # Environment variables template
+├── routers/
+│   └── chat.py           # Chat endpoint implementation
+├── services/
+│   └── gemini_service.py # Gemini API integration
+├── middleware/
+│   ├── rate_limiter.py   # Rate limiting logic
+│   └── logging_middleware.py # Request/response logging
+└── models/
+    └── schemas.py        # Pydantic data models
+```
+
+## Setup Instructions
+
+### 1. Create Virtual Environment
+
+```bash
+cd python-backend
+python -m venv venv
+```
+
+### 2. Activate Virtual Environment
+
+**Linux/macOS:**
+```bash
+source venv/bin/activate
+```
+
+**Windows:**
+```bash
+venv\Scripts\activate
+```
+
+### 3. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configure Environment Variables
+
+Copy `.env.example` to `.env` and add your Gemini API key:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set your `GEMINI_API_KEY`:
+```
+GEMINI_API_KEY=your_actual_api_key_here
+```
+
+### 5. Run the Development Server
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+The API will be available at `http://localhost:8000`
+
+## API Documentation
+
+Once running, visit:
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+## Environment Variables
+
+See `.env.example` for all available configuration options:
+
+- `GEMINI_API_KEY` - Your Google Gemini API key (required)
+- `RATE_LIMIT_REQUESTS` - Number of requests allowed per time window (default: 15)
+- `RATE_LIMIT_WINDOW` - Time window in seconds (default: 60)
+- `ALLOWED_ORIGINS` - CORS allowed origins (default: http://localhost:8080)
+- `GEMINI_MODEL` - Gemini model to use (default: gemini-1.5-flash)
+- `GEMINI_TEMPERATURE` - Response randomness (default: 0.7)
+- `GEMINI_MAX_OUTPUT_TOKENS` - Max response length (default: 1024)
+- `GEMINI_TIMEOUT` - API timeout in seconds (default: 30)
+
+## Testing
+
+Run tests with pytest:
+
+```bash
+pytest
+```
+
+Run property-based tests:
+
+```bash
+pytest -v
+```
+
+## Running Both Servers Locally
+
+The StudyMate application requires both the Express server (frontend + existing API) and the FastAPI backend (AI chat) to run simultaneously.
+
+### Option 1: Run in Separate Terminals (Recommended for Development)
+
+**Terminal 1 - FastAPI Backend:**
+```bash
+cd python-backend
+source venv/bin/activate  # Windows: venv\Scripts\activate
+uvicorn main:app --reload --port 8000
+```
+
+**Terminal 2 - Express + React Frontend:**
+```bash
+# From project root
+pnpm dev
+```
+
+The Express server will automatically proxy `/api/chat` requests to the FastAPI backend during development.
+
+### Option 2: Using Process Managers
+
+You can use tools like `concurrently` or `pm2` to run both servers with a single command. Add to your root `package.json`:
+
+```json
+{
+  "scripts": {
+    "dev:all": "concurrently \"pnpm dev\" \"cd python-backend && uvicorn main:app --reload --port 8000\""
+  }
+}
+```
+
+### Verifying Both Servers Are Running
+
+1. **FastAPI Backend**: Visit `http://localhost:8000/health` - should return `{"status": "healthy"}`
+2. **Express Server**: Visit `http://localhost:8080` - should load the React application
+3. **API Docs**: Visit `http://localhost:8000/docs` - should show Swagger UI
+
+## API Endpoint Specifications
+
+### POST /api/chat
+
+Send a message to the AI and receive a response.
+
+**Request:**
+```json
+{
+  "message": "What is photosynthesis?",
+  "history": [
+    {
+      "role": "user",
+      "content": "Hello"
+    },
+    {
+      "role": "model",
+      "content": "Hi! How can I help you today?"
+    }
+  ]
+}
+```
+
+**Request Schema:**
+- `message` (string, required): User's message (1-2000 characters)
+- `history` (array, optional): Conversation history (max 10 messages)
+  - `role` (string): Either "user" or "model"
+  - `content` (string): Message content
+
+**Success Response (200):**
+```json
+{
+  "response": "Photosynthesis is the process by which plants...",
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
+**Error Responses:**
+
+**400 Bad Request** - Invalid input:
+```json
+{
+  "error": "Validation error",
+  "code": "VALIDATION_ERROR",
+  "details": [
+    {
+      "field": "message",
+      "message": "Message must be between 1 and 2000 characters"
+    }
+  ]
+}
+```
+
+**429 Too Many Requests** - Rate limit exceeded:
+```json
+{
+  "error": "You've reached the message limit. Please try again in a moment.",
+  "code": "RATE_LIMIT_EXCEEDED"
+}
+```
+
+**500 Internal Server Error** - Server error:
+```json
+{
+  "error": "Something went wrong. Please try again.",
+  "code": "INTERNAL_ERROR"
+}
+```
+
+**503 Service Unavailable** - Gemini API error:
+```json
+{
+  "error": "I'm having trouble connecting right now. Please try again.",
+  "code": "GEMINI_API_ERROR"
+}
+```
+
+### GET /health
+
+Health check endpoint to verify the service is running.
+
+**Success Response (200):**
+```json
+{
+  "status": "healthy"
+}
+```
+
+### Rate Limiting
+
+- **Default Limit**: 15 requests per 60 seconds per IP address
+- **Headers**: Responses include rate limit information:
+  - `X-RateLimit-Limit`: Maximum requests allowed
+  - `X-RateLimit-Remaining`: Requests remaining in current window
+  - `X-RateLimit-Reset`: Time when the limit resets
+
+## Development
+
+The server supports hot-reload in development mode. Any changes to Python files will automatically restart the server.
+
+### Development Tips
+
+1. **Check Logs**: The FastAPI backend logs all requests, errors, and Gemini API calls to the console
+2. **Interactive API Docs**: Use `http://localhost:8000/docs` to test endpoints interactively
+3. **CORS**: In development, the backend accepts requests from `http://localhost:8080` by default
+4. **Rate Limiting**: You can adjust rate limits in `.env` for testing purposes
+
+## Troubleshooting
+
+### "GEMINI_API_KEY not found" Error
+
+Make sure you've created a `.env` file in the `python-backend/` directory with your API key:
+```bash
+cp .env.example .env
+# Edit .env and add your actual API key
+```
+
+### Port Already in Use
+
+If port 8000 is already in use, you can run on a different port:
+```bash
+uvicorn main:app --reload --port 8001
+```
+
+Remember to update the proxy configuration in `vite.config.ts` if you change the port.
+
+### CORS Errors
+
+If you see CORS errors in the browser console:
+1. Verify the FastAPI backend is running on port 8000
+2. Check that `ALLOWED_ORIGINS` in `.env` includes `http://localhost:8080`
+3. Restart both servers after changing environment variables
+
+### Rate Limit Testing
+
+To test rate limiting without waiting, temporarily reduce the limits in `.env`:
+```
+RATE_LIMIT_REQUESTS=3
+RATE_LIMIT_WINDOW=10
+```
+
+## Production Deployment
+
+### Environment Variables
+
+Ensure all required environment variables are set in your production environment:
+- `GEMINI_API_KEY` - Your production Gemini API key
+- `ALLOWED_ORIGINS` - Your production frontend URL (e.g., `https://studymate.com`)
+- Adjust rate limits as needed for production traffic
+
+### Running in Production
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run with production server
+uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+### Docker Deployment (Optional)
+
+Create a `Dockerfile` in the `python-backend/` directory:
+```dockerfile
+FROM python:3.10-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+Build and run:
+```bash
+docker build -t studymate-backend .
+docker run -p 8000:8000 --env-file .env studymate-backend
+```

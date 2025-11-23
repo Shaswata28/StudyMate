@@ -52,6 +52,8 @@ export default function Dashboard() {
     const selected = updatedCourses.find((c) => c.id === courseId);
     if (selected) {
       setActiveCourse(selected);
+      // Clear conversation history when switching courses
+      setMessages([]);
     }
   };
 
@@ -80,7 +82,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleSendMessage = (message: string) => {
+  const handleSendMessage = async (message: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
       text: message,
@@ -91,18 +93,58 @@ export default function Dashboard() {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoadingResponse(true);
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const aiResponse: Message = {
+    try {
+      // Format conversation history (last 10 messages) for the API
+      const history = messages.slice(-10).map((msg) => ({
+        role: msg.isAI ? "model" : "user",
+        content: msg.text,
+      }));
+
+      // Call FastAPI backend
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: message,
+          history: history,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle error responses by displaying error as AI message
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: data.error || "Something went wrong. Please try again.",
+          isAI: true,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      } else {
+        // Handle success response
+        const aiResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: data.response,
+          isAI: true,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiResponse]);
+      }
+    } catch (error) {
+      // Handle network errors
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: `This is a sample AI based response on the uploaded material. For more accurate response please connect backend API.\n\n**Key Points:**\n• Sample list 1\n• Sample list 2\n\nPlease leave a review for better response!`,
+        text: "I'm having trouble connecting right now. Please try again.",
         isAI: true,
         timestamp: new Date(),
       };
-
-      setMessages((prev) => [...prev, aiResponse]);
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoadingResponse(false);
-    }, 1500);
+    }
   };
 
   const toggleSidebar = () => {
