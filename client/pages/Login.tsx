@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
@@ -41,17 +43,15 @@ export default function Login() {
     }
 
     setIsLoading(true);
-    console.log("Login attempt:", { email, password, rememberMe });
 
     try {
-      // Simulate login delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setIsLoading(false);
+      await login({ email, password });
       toast.success("Login successful!", "Redirecting to dashboard...");
       setTimeout(() => navigate("/app"), 600);
     } catch (error) {
       setIsLoading(false);
-      toast.error("Login failed", "Please check your credentials and try again");
+      const errorMessage = error instanceof Error ? error.message : "Please check your credentials and try again";
+      toast.error("Login failed", errorMessage);
     }
   };
 

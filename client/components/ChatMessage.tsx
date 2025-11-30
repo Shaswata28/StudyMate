@@ -69,11 +69,12 @@ export default function ChatMessage({
       )}
 
       <div
-        className={`max-w-[65%] rounded-lg px-4 py-3 message-enter ${
+        className={`rounded-lg px-4 py-3 message-enter ${
           isAI
-            ? "bg-gray-100 dark:bg-slate-800 text-black dark:text-white rounded-tl-none"
-            : "bg-studymate-black dark:bg-studymate-black text-white rounded-tr-none"
+            ? "flex-1 bg-gray-100 dark:bg-slate-800 text-black dark:text-white rounded-tl-none"
+            : "max-w-[65%] bg-studymate-black dark:bg-studymate-black text-white rounded-tr-none"
         }`}
+        style={{ fontFamily: "'Exo 2', sans-serif" }}
       >
         {/* Show attachments if present (for user messages) */}
         {attachments && attachments.length > 0 && (
@@ -94,7 +95,7 @@ export default function ChatMessage({
           </div>
         )}
 
-        <div className="font-audiowide text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">
+        <div className="text-base md:text-lg leading-relaxed whitespace-pre-wrap break-words">
           {formattedContent}
         </div>
 

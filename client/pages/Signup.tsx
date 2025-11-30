@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, ChevronDown, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { toast } from "@/lib/toast";
 import PasswordStrengthIndicator from "@/components/PasswordStrengthIndicator";
+import { useAuth } from "@/hooks/use-auth";
 
 type SignupStep = 1 | 2;
 
@@ -16,6 +17,7 @@ interface Step1Errors {
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { signup, saveAcademicProfile } = useAuth();
   const [step, setStep] = useState<SignupStep>(1);
   const [showStepAnimation, setShowStepAnimation] = useState(false);
 
@@ -115,7 +117,7 @@ export default function Signup() {
     }, 600);
   };
 
-  const handleStep2Submit = (e: React.FormEvent) => {
+  const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateStep2()) {
@@ -126,11 +128,26 @@ export default function Signup() {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
+      // Step 1: Create user account
+      await signup({ email, password });
+      
+      // Step 2: Save academic profile
+      await saveAcademicProfile({
+        grade: [grade], // Convert to array as per backend schema
+        semester_type: semesterType as 'double' | 'tri',
+        semester: parseInt(semester),
+        subject: [subject], // Convert to array as per backend schema
+      });
+
       toast.success("Signup successful!", "Redirecting to onboarding...");
       setTimeout(() => navigate("/onboarding"), 600);
-    }, 1000);
+    } catch (error) {
+      setIsLoading(false);
+      const errorMessage = error instanceof Error ? error.message : "Signup failed. Please try again.";
+      toast.error("Signup failed", errorMessage);
+    }
   };
 
   const handleBack = () => {

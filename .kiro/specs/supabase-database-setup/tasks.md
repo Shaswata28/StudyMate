@@ -57,15 +57,24 @@
     - Add validation for required Supabase environment variables
     - _Requirements: 1.2_
 
-- [ ] 3. Create database migration SQL scripts
-  - [ ] 3.1 Create python-backend/migrations/001_enable_extensions.sql
+- [x] 3. Create database migration SQL scripts
+
+
+
+
+
+  - [x] 3.1 Create python-backend/migrations/001_enable_extensions.sql
+
+
     - Enable uuid-ossp extension for UUID generation
     - Enable pgcrypto extension for cryptographic functions
     - Enable vector extension (pgvector) for embeddings
     - Enable pg_trgm extension for text search capabilities
     - _Requirements: 1.4_
   
-  - [ ] 3.2 Create python-backend/migrations/002_create_tables.sql with all table definitions
+  - [x] 3.2 Create python-backend/migrations/002_create_tables.sql with all table definitions
+
+
     - Create update_updated_at() trigger function for automatic timestamp management
     - Create academic table with array fields and CHECK constraints
     - Create personalized table with JSONB preferences and GIN index
@@ -74,7 +83,9 @@
     - Create chat_history table with JSONB array and vector embeddings with HNSW index
     - _Requirements: 3.1, 3.2, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.5, 6.1, 6.2, 6.4, 6.5, 7.1, 7.2, 7.3, 7.4, 7.5_
   
-  - [ ] 3.3 Create python-backend/migrations/003_create_rls_policies.sql
+  - [x] 3.3 Create python-backend/migrations/003_create_rls_policies.sql
+
+
     - Enable RLS on all tables (academic, personalized, courses, materials, chat_history)
     - Create policy "Users edit own academic data" for academic table
     - Create policy "Users edit own prefs" for personalized table
@@ -83,14 +94,21 @@
     - Create policy "Users own chat history" for chat_history table (via course ownership)
     - _Requirements: 1.3, 8.4_
   
-  - [ ] 3.4 Create python-backend/migrations/004_rollback.sql
+  - [x] 3.4 Create python-backend/migrations/004_rollback.sql
+
+
     - Include DROP TABLE statements in reverse dependency order
     - Include DROP POLICY statements for all RLS policies
     - Include DROP INDEX statements for all custom indexes
     - Include DROP FUNCTION for update_updated_at trigger
     - _Requirements: 8.5_
 
-- [ ] 4. Create migration execution script
+- [x] 4. Create migration execution script
+
+
+
+
+
   - Create python-backend/scripts/run_migrations.py to execute SQL migrations
   - Read SQL files from migrations directory
   - Execute against Supabase database using service role connection
@@ -98,27 +116,46 @@
   - Add instructions to README for running migrations
   - _Requirements: 8.1_
 
-- [ ] 5. Create Python models for database schema
+- [x] 5. Create Python models for database schema
+
+
+
+
+
   - Create python-backend/models/database.py with Pydantic models
   - Define models for academic, personalized, courses, materials, chat_history tables
   - Export models for use in routers and services
   - Ensure models match SQL schema definitions
   - _Requirements: 8.2_
 
-- [ ] 6. Create authentication utilities and dependencies
-  - [ ] 6.1 Create python-backend/services/auth_service.py with auth utilities
+- [x] 6. Create authentication utilities and dependencies
+
+
+
+
+  - [x] 6.1 Create python-backend/services/auth_service.py with auth utilities
+
+
     - Function to verify JWT tokens using Supabase
     - Function to get user from JWT token
     - FastAPI dependency for protected routes (get_current_user)
     - _Requirements: 2.2, 2.4_
   
-  - [ ] 6.2 Create python-backend/middleware/auth_middleware.py
+  - [x] 6.2 Create python-backend/middleware/auth_middleware.py
+
+
     - Middleware to extract and validate JWT tokens from Authorization header
     - Attach user info to request state
     - _Requirements: 2.2, 2.4_
 
-- [ ] 7. Create API routes for authentication
-  - [ ] 7.1 Create python-backend/routers/auth.py with authentication endpoints
+- [x] 7. Create API routes for authentication
+
+
+
+
+  - [x] 7.1 Create python-backend/routers/auth.py with authentication endpoints
+
+
     - POST /api/auth/signup - User registration endpoint
     - POST /api/auth/login - User login endpoint
     - POST /api/auth/logout - User logout endpoint
@@ -126,24 +163,36 @@
     - POST /api/auth/refresh - Refresh access token endpoint
     - _Requirements: 2.1, 2.2, 2.3_
   
-  - [ ] 7.2 Register auth routes in python-backend/main.py
+  - [x] 7.2 Register auth routes in python-backend/main.py
+
+
     - Import and include auth router
     - _Requirements: 2.1_
 
-- [ ] 8. Create API routes for database operations
-  - [ ] 8.1 Create python-backend/routers/academic.py for academic profile operations
+- [x] 8. Create API routes for database operations
+
+
+
+
+
+  - [x] 8.1 Create python-backend/routers/academic.py for academic profile operations
+
+
     - GET /api/academic - Get user's academic profile
     - POST /api/academic - Create academic profile
     - PUT /api/academic - Update academic profile
     - _Requirements: 3.1, 3.3, 3.4_
   
-  - [ ] 8.2 Create python-backend/routers/preferences.py for personalized preferences
+  - [x] 8.2 Create python-backend/routers/preferences.py for personalized preferences
+
+
     - GET /api/preferences - Get user's preferences
     - POST /api/preferences - Create preferences
     - PUT /api/preferences - Update preferences
     - _Requirements: 4.1, 4.2, 4.3_
   
-  - [ ] 8.3 Create python-backend/routers/courses.py for course management
+  - [x] 8.3 Create python-backend/routers/courses.py for course management
+
     - GET /api/courses - List user's courses
     - POST /api/courses - Create new course
     - GET /api/courses/{id} - Get course details
@@ -151,21 +200,26 @@
     - DELETE /api/courses/{id} - Delete course
     - _Requirements: 5.1, 5.3, 5.4, 5.5_
   
-  - [ ] 8.4 Create python-backend/routers/materials.py for materials management
+  - [x] 8.4 Create python-backend/routers/materials.py for materials management
+
     - GET /api/courses/{course_id}/materials - List course materials
     - POST /api/courses/{course_id}/materials - Upload material
     - GET /api/materials/{id} - Get material details
     - DELETE /api/materials/{id} - Delete material
     - _Requirements: 6.1, 6.4, 6.5_
   
-  - [ ] 8.5 Update python-backend/routers/chat.py for chat history operations
+  - [x] 8.5 Update python-backend/routers/chat.py for chat history operations
+
+
     - Update existing chat router to integrate with Supabase
     - GET /api/courses/{course_id}/chat - Get chat history from Supabase
     - POST /api/courses/{course_id}/chat - Save chat message to Supabase
     - Keep existing Gemini integration
     - _Requirements: 7.1, 7.2, 7.4_
   
-  - [ ] 8.6 Register all API routes in python-backend/main.py
+  - [x] 8.6 Register all API routes in python-backend/main.py
+
+
     - Import and include all routers (academic, preferences, courses, materials)
     - Chat router already registered
     - _Requirements: 8.1_
@@ -303,7 +357,12 @@
     - Test user cannot update other user's data
     - _Requirements: 1.3, 8.4_
 
-- [ ] 11. Create database schema documentation
+- [x] 11. Create database schema documentation
+
+
+
+
+
   - Create docs/database-schema.md with comprehensive documentation
   - Document all tables with field descriptions and data types
   - Document all relationships and foreign keys with ERD diagram

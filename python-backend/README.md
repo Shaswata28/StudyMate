@@ -92,6 +92,81 @@ See `.env.example` for all available configuration options:
 - `GEMINI_MAX_OUTPUT_TOKENS` - Max response length (default: 1024)
 - `GEMINI_TIMEOUT` - API timeout in seconds (default: 30)
 
+## Database Migrations
+
+The application uses Supabase as the database backend. Before running the application, you need to set up the database schema by running migrations.
+
+### Prerequisites
+
+1. Create a Supabase project at https://supabase.com
+2. Get your database credentials from the Supabase dashboard:
+   - Project URL: Settings → API → Project URL
+   - Anon Key: Settings → API → Project API keys → anon public
+   - Service Role Key: Settings → API → Project API keys → service_role (keep secret!)
+   - Database Password: Settings → Database → Database password (you set this during project creation)
+
+3. Add these credentials to your `.env` file:
+```bash
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_ANON_KEY=your_anon_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+SUPABASE_DB_PASSWORD=your_database_password_here
+```
+
+### Running Migrations
+
+**Forward Migrations** (create tables and schema):
+```bash
+# Make sure you're in the python-backend directory
+cd python-backend
+
+# Activate your virtual environment
+source venv/bin/activate  # Linux/macOS
+# or
+venv\Scripts\activate  # Windows
+
+# Run migrations
+python scripts/run_migrations.py
+```
+
+This will execute the following migrations in order:
+1. `001_enable_extensions.sql` - Enable required PostgreSQL extensions (uuid-ossp, pgcrypto, vector, pg_trgm)
+2. `002_create_tables.sql` - Create all database tables (academic, personalized, courses, materials, chat_history)
+3. `003_create_rls_policies.sql` - Enable Row Level Security and create security policies
+
+**Rollback Migration** (drop all tables):
+```bash
+python scripts/run_migrations.py --rollback
+```
+
+⚠️ **WARNING**: The rollback will drop all tables and data. Use with caution!
+
+### Migration Files
+
+All migration files are located in `python-backend/migrations/`:
+- `001_enable_extensions.sql` - PostgreSQL extensions
+- `002_create_tables.sql` - Table definitions with constraints and indexes
+- `003_create_rls_policies.sql` - Row Level Security policies
+- `004_rollback.sql` - Rollback script to drop everything
+
+### Troubleshooting Migrations
+
+**"SUPABASE_DB_PASSWORD not set" Error**:
+- Make sure you've added `SUPABASE_DB_PASSWORD` to your `.env` file
+- This is your database password from Supabase project settings, not the service role key
+
+**"Connection refused" Error**:
+- Verify your Supabase project is active
+- Check that your IP address is allowed in Supabase project settings
+- Verify the database password is correct
+
+**"Extension already exists" Warnings**:
+- These are safe to ignore - the migrations use `IF NOT EXISTS` clauses
+
+**"Permission denied" Errors**:
+- Ensure you're using the correct database password
+- The postgres user should have full permissions by default
+
 ## Testing
 
 Run tests with pytest:
@@ -144,6 +219,125 @@ You can use tools like `concurrently` or `pm2` to run both servers with a single
 1. **FastAPI Backend**: Visit `http://localhost:8000/health` - should return `{"status": "healthy"}`
 2. **Express Server**: Visit `http://localhost:8080` - should load the React application
 3. **API Docs**: Visit `http://localhost:8000/docs` - should show Swagger UI
+
+## Authentication
+
+The backend uses Supabase Auth for JWT-based authentication. Protected routes require a valid JWT token in the Authorization header.
+
+### Using Authentication in Routes
+
+**Protected Route Example:**
+```python
+from fastapi import APIRouter, Depends
+from services.auth_service import get_current_user, AuthUser
+
+router = APIRouter()
+
+@router.get("/api/profile")
+async def get_profile(user: AuthUser = Depends(get_current_user)):
+    """Protected route - requires authentication."""
+    return {
+        "user_id": user.id,
+        "email": user.email
+    }
+```
+
+**Optional Authentication Example:**
+```python
+from fastapi import APIRouter, Depends
+from services.auth_service import get_current_user_optional, AuthUser
+from typing import Optional
+
+router = APIRouter()
+
+@router.get("/api/public-or-private")
+async def flexible_route(user: Optional[AuthUser] = Depends(get_current_user_optional)):
+    """Route that works with or without authentication."""
+    if user:
+        return {"message": f"Hello {user.email}"}
+    else:
+        return {"message": "Hello anonymous user"}
+```
+
+### Authentication Middleware
+
+Two middleware options are available:
+
+**1. AuthMiddleware (Recommended)** - Enriches requests with user info but doesn't block unauthenticated requests:
+```python
+from middleware.auth_middleware import AuthMiddleware
+
+app = FastAPI()
+app.add_middleware(AuthMiddleware)
+
+# Access user info in routes via request.state
+@app.get("/api/example")
+async def example(request: Request):
+    if request.state.user:
+        user_id = request.state.user["id"]
+        # User is authenticated
+    else:
+        # User is not authenticated
+```
+
+**2. RequireAuthMiddleware** - Blocks all unauthenticated requests (except public paths):
+```python
+from middleware.auth_middleware import RequireAuthMiddleware
+
+# Protect entire API
+app = FastAPI()
+app.add_middleware(RequireAuthMiddleware)
+
+# Or protect specific router
+protected_router = APIRouter()
+protected_router.add_middleware(RequireAuthMiddleware)
+```
+
+### Making Authenticated Requests
+
+**From Frontend:**
+```javascript
+// Get token from Supabase Auth
+const { data: { session } } = await supabase.auth.getSession();
+const token = session?.access_token;
+
+// Make authenticated request
+const response = await fetch('/api/profile', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+```
+
+**From Python:**
+```python
+import httpx
+
+token = "your_jwt_token_here"
+headers = {"Authorization": f"Bearer {token}"}
+
+async with httpx.AsyncClient() as client:
+    response = await client.get(
+        "http://localhost:8000/api/profile",
+        headers=headers
+    )
+```
+
+### Authentication Error Responses
+
+**401 Unauthorized** - Missing or invalid token:
+```json
+{
+  "detail": "Invalid or expired authentication token"
+}
+```
+
+**401 Unauthorized** - Missing token:
+```json
+{
+  "detail": "Missing authentication token"
+}
+```
 
 ## API Endpoint Specifications
 

@@ -2,8 +2,18 @@
 Pydantic schemas for request/response validation.
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import List, Optional, Literal
+from datetime import datetime
+from constants import (
+    VALID_GRADES,
+    VALID_SEMESTER_TYPES,
+    MIN_SEMESTER,
+    MAX_SEMESTER,
+    VALID_SUBJECTS,
+    VALID_LEARNING_PACE,
+    VALID_PRIOR_EXPERIENCE
+)
 
 
 class Message(BaseModel):
@@ -58,3 +68,167 @@ class ErrorResponse(BaseModel):
     """
     error: str
     code: str
+
+
+# Database Schemas
+
+class AcademicProfile(BaseModel):
+    """
+    Schema for academic profile data.
+    """
+    grade: List[str] = Field(..., description="Grade levels (e.g., ['Bachelor', 'Masters'])")
+    semester_type: str = Field(..., description="Semester type: 'double' or 'tri'")
+    semester: int = Field(..., ge=MIN_SEMESTER, le=MAX_SEMESTER, description=f"Current semester ({MIN_SEMESTER}-{MAX_SEMESTER})")
+    subject: List[str] = Field(default_factory=list, description="List of subjects")
+    
+    @field_validator('grade')
+    @classmethod
+    def validate_grade(cls, v: List[str]) -> List[str]:
+        """Validate that all grades are valid."""
+        if not v:
+            raise ValueError("At least one grade must be specified")
+        invalid_grades = [g for g in v if g not in VALID_GRADES]
+        if invalid_grades:
+            raise ValueError(f"Invalid grades: {invalid_grades}. Must be one of: {VALID_GRADES}")
+        return v
+    
+    @field_validator('semester_type')
+    @classmethod
+    def validate_semester_type(cls, v: str) -> str:
+        """Validate semester type."""
+        if v not in VALID_SEMESTER_TYPES:
+            raise ValueError(f"Invalid semester type: {v}. Must be one of: {VALID_SEMESTER_TYPES}")
+        return v
+    
+    @field_validator('subject')
+    @classmethod
+    def validate_subject(cls, v: List[str]) -> List[str]:
+        """Validate that all subjects are valid."""
+        invalid_subjects = [s for s in v if s not in VALID_SUBJECTS]
+        if invalid_subjects:
+            raise ValueError(f"Invalid subjects: {invalid_subjects}. Must be one of: {VALID_SUBJECTS}")
+        return v
+
+
+class UserPreferences(BaseModel):
+    """
+    Schema for user preferences (stored as JSONB).
+    """
+    detail_level: float = Field(..., ge=0, le=1, description="Detail preference (0-1)")
+    example_preference: float = Field(..., ge=0, le=1, description="Example preference (0-1)")
+    analogy_preference: float = Field(..., ge=0, le=1, description="Analogy preference (0-1)")
+    technical_language: float = Field(..., ge=0, le=1, description="Technical language preference (0-1)")
+    structure_preference: float = Field(..., ge=0, le=1, description="Structure preference (0-1)")
+    visual_preference: float = Field(..., ge=0, le=1, description="Visual preference (0-1)")
+    learning_pace: str = Field(..., description="Learning pace: 'slow', 'moderate', or 'fast'")
+    prior_experience: str = Field(..., description="Experience level: 'beginner', 'intermediate', 'advanced', or 'expert'")
+    
+    @field_validator('learning_pace')
+    @classmethod
+    def validate_learning_pace(cls, v: str) -> str:
+        """Validate learning pace."""
+        if v not in VALID_LEARNING_PACE:
+            raise ValueError(f"Invalid learning pace: {v}. Must be one of: {VALID_LEARNING_PACE}")
+        return v
+    
+    @field_validator('prior_experience')
+    @classmethod
+    def validate_prior_experience(cls, v: str) -> str:
+        """Validate prior experience level."""
+        if v not in VALID_PRIOR_EXPERIENCE:
+            raise ValueError(f"Invalid prior experience: {v}. Must be one of: {VALID_PRIOR_EXPERIENCE}")
+        return v
+
+
+class CourseCreate(BaseModel):
+    """
+    Schema for creating a new course.
+    """
+    name: str = Field(..., min_length=1, max_length=255, description="Course name")
+
+
+class CourseResponse(BaseModel):
+    """
+    Schema for course response.
+    """
+    id: str
+    user_id: str
+    name: str
+    created_at: str
+    updated_at: str
+
+
+class MaterialCreate(BaseModel):
+    """
+    Schema for creating a material record (after file upload).
+    """
+    course_id: str = Field(..., description="Course ID this material belongs to")
+    name: str = Field(..., min_length=1, max_length=255, description="File name")
+    file_path: str = Field(..., description="Path in storage bucket")
+    file_type: str = Field(..., description="MIME type (e.g., 'application/pdf')")
+    file_size: int = Field(..., gt=0, description="File size in bytes")
+
+
+class MaterialResponse(BaseModel):
+    """
+    Schema for material response.
+    """
+    id: str
+    course_id: str
+    name: str
+    file_path: str
+    file_type: str
+    file_size: int
+    created_at: str
+    updated_at: str
+
+
+# Authentication Schemas
+
+class SignupRequest(BaseModel):
+    """
+    Request schema for user registration.
+    """
+    email: EmailStr = Field(..., description="User's email address")
+    password: str = Field(..., min_length=8, max_length=100, description="User's password (min 8 characters)")
+
+
+class LoginRequest(BaseModel):
+    """
+    Request schema for user login.
+    """
+    email: EmailStr = Field(..., description="User's email address")
+    password: str = Field(..., min_length=1, max_length=100, description="User's password")
+
+
+class AuthResponse(BaseModel):
+    """
+    Response schema for successful authentication (signup/login).
+    """
+    access_token: str = Field(..., description="JWT access token")
+    token_type: str = Field(default="bearer", description="Token type")
+    expires_in: int = Field(..., description="Token expiration time in seconds")
+    refresh_token: str = Field(..., description="Refresh token for obtaining new access tokens")
+    user: dict = Field(..., description="User information")
+
+
+class RefreshTokenRequest(BaseModel):
+    """
+    Request schema for refreshing access token.
+    """
+    refresh_token: str = Field(..., description="Refresh token")
+
+
+class SessionResponse(BaseModel):
+    """
+    Response schema for session information.
+    """
+    user: dict = Field(..., description="User information")
+    session: Optional[dict] = Field(None, description="Session information")
+
+
+class MessageResponse(BaseModel):
+    """
+    Generic message response.
+    """
+    message: str = Field(..., description="Response message")

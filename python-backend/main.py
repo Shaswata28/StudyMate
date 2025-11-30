@@ -48,6 +48,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register auth router
+from routers.auth import router as auth_router
+app.include_router(auth_router)
+
+# Register academic router
+from routers.academic import router as academic_router
+app.include_router(academic_router)
+
+# Register preferences router
+from routers.preferences import router as preferences_router
+app.include_router(preferences_router)
+
+# Register profile router (legacy - kept for backward compatibility)
+from routers.profile import router as profile_router
+app.include_router(profile_router)
+
+# Register courses router
+from routers.courses import router as courses_router
+app.include_router(courses_router)
+
+# Register materials router
+from routers.materials import router as materials_router
+app.include_router(materials_router)
+
 # Register chat router
 from routers.chat import router as chat_router
 app.include_router(chat_router)

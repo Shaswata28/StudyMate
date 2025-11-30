@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "@/lib/toast";
 
 interface Question {
   id: number;
@@ -107,8 +109,10 @@ const questions: Question[] = [
 
 export default function Questions() {
   const navigate = useNavigate();
+  const { savePreferences } = useAuth();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   const currentQuestion = questions[currentQuestionIndex];
   const selectedOption = answers[currentQuestion.id];
@@ -122,12 +126,69 @@ export default function Questions() {
     }));
   };
 
-  const handleNext = () => {
+  // Convert questionnaire answers to preference values (0-1 scale)
+  const convertAnswersToPreferences = () => {
+    const getScaleValue = (answer: string, questionId: number) => {
+      // Most questions have A=0, B=0.5, C=1
+      // Question 7 (learning pace) is reversed: A=0 (slow), B=0.5, C=1 (fast)
+      // Question 8 (prior experience) has 4 options: A=0, B=0.33, C=0.67, D=1
+      
+      if (questionId === 8) {
+        const mapping: Record<string, number> = { 'A': 0, 'B': 0.33, 'C': 0.67, 'D': 1 };
+        return mapping[answer] || 0.5;
+      }
+      
+      const mapping: Record<string, number> = { 'A': 0, 'B': 0.5, 'C': 1 };
+      return mapping[answer] || 0.5;
+    };
+
+    const getPaceValue = (answer: string) => {
+      const mapping: Record<string, 'slow' | 'moderate' | 'fast'> = {
+        'A': 'slow',
+        'B': 'moderate',
+        'C': 'fast'
+      };
+      return mapping[answer] || 'moderate';
+    };
+
+    const getExperienceValue = (answer: string) => {
+      const mapping: Record<string, 'beginner' | 'intermediate' | 'advanced' | 'expert'> = {
+        'A': 'beginner',
+        'B': 'intermediate',
+        'C': 'advanced',
+        'D': 'expert'
+      };
+      return mapping[answer] || 'intermediate';
+    };
+
+    return {
+      detail_level: getScaleValue(answers[1] || 'B', 1),
+      example_preference: getScaleValue(answers[2] || 'B', 2),
+      analogy_preference: getScaleValue(answers[3] || 'B', 3),
+      technical_language: getScaleValue(answers[4] || 'B', 4),
+      structure_preference: getScaleValue(answers[5] || 'B', 5),
+      visual_preference: getScaleValue(answers[6] || 'B', 6),
+      learning_pace: getPaceValue(answers[7] || 'B'),
+      prior_experience: getExperienceValue(answers[8] || 'B'),
+    };
+  };
+
+  const handleNext = async () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
-      console.log("All answers:", answers);
-      navigate("/app");
+      // Last question - save preferences and navigate
+      setIsSaving(true);
+      try {
+        const preferences = convertAnswersToPreferences();
+        await savePreferences(preferences);
+        toast.success("Preferences saved!", "Your learning profile is ready");
+        setTimeout(() => navigate("/app"), 600);
+      } catch (error) {
+        setIsSaving(false);
+        const errorMessage = error instanceof Error ? error.message : "Failed to save preferences";
+        toast.error("Error", errorMessage);
+      }
     }
   };
 
@@ -234,9 +295,10 @@ export default function Questions() {
           {/* Next Button */}
           <button
             onClick={handleNext}
-            disabled={!selectedOption}
+            disabled={!selectedOption || isSaving}
             className="w-[65px] h-[65px] rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed btn-micro"
             aria-label={currentQuestionIndex === questions.length - 1 ? "Complete questionnaire" : "Next question"}
+            aria-busy={isSaving}
           >
             <svg
               width="65"

@@ -99,7 +99,8 @@ export default function ChatInput({ onSend, onFileUpload, isLoading = false }: C
           placeholder="Ask anything"
           disabled={isLoading}
           rows={1}
-          className={`flex-1 bg-transparent outline-none font-audiowide ${getTextSizeClass()} text-studymate-darkgray dark:text-gray-300 placeholder:text-studymate-darkgray dark:placeholder:text-gray-500 tracking-[2px] disabled:opacity-50 disabled:cursor-not-allowed transition-all resize-none overflow-y-auto max-h-[100px] leading-relaxed scrollbar-thin scrollbar-thumb-studymate-darkgray dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-studymate-black dark:hover:scrollbar-thumb-gray-500`}
+          className={`flex-1 bg-transparent outline-none ${getTextSizeClass()} text-studymate-darkgray dark:text-gray-300 placeholder:text-studymate-darkgray dark:placeholder:text-gray-500 tracking-[2px] disabled:opacity-50 disabled:cursor-not-allowed transition-all resize-none overflow-y-auto max-h-[100px] leading-relaxed scrollbar-thin scrollbar-thumb-studymate-darkgray dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-studymate-black dark:hover:scrollbar-thumb-gray-500`}
+          style={{ fontFamily: "'Exo 2', sans-serif" }}
           aria-label="Message input"
         />
 
