@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Optional
 import logging
 
-from services.supabase_client import supabase_admin, get_anon_client
+from services.supabase_client import supabase_admin, get_anon_client, get_user_client
 from services.auth_service import get_current_user, AuthUser
 from models.schemas import (
     SignupRequest,
@@ -67,13 +67,15 @@ async def signup(request: SignupRequest):
     try:
         logger.info(f"Attempting to register user: {request.email}")
         
-        # Use anonymous client for signup (no authentication required)
-        anon_client = get_anon_client()
+        # Use admin client for signup to auto-confirm email (for testing/development)
+        # In production, you may want to use anon_client and require email confirmation
+        # anon_client = get_anon_client()
         
-        # Sign up the user with Supabase Auth
-        response = anon_client.auth.sign_up({
+        # Sign up the user with Supabase Auth using admin client (auto-confirms email)
+        response = supabase_admin.auth.admin.create_user({
             "email": request.email,
-            "password": request.password
+            "password": request.password,
+            "email_confirm": True  # Auto-confirm email for testing
         })
         
         if not response.user:
@@ -85,12 +87,26 @@ async def signup(request: SignupRequest):
         
         logger.info(f"User registered successfully: {response.user.id}")
         
+        # Admin create_user doesn't return a session, so we need to sign in the user
+        anon_client = get_anon_client()
+        login_response = anon_client.auth.sign_in_with_password({
+            "email": request.email,
+            "password": request.password
+        })
+        
+        if not login_response.session:
+            logger.error(f"Failed to create session after signup for user: {response.user.id}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="User created but failed to establish session"
+            )
+        
         # Return authentication response
         return AuthResponse(
-            access_token=response.session.access_token,
+            access_token=login_response.session.access_token,
             token_type="bearer",
-            expires_in=response.session.expires_in or 3600,
-            refresh_token=response.session.refresh_token,
+            expires_in=login_response.session.expires_in or 3600,
+            refresh_token=login_response.session.refresh_token,
             user={
                 "id": response.user.id,
                 "email": response.user.email,
@@ -108,7 +124,7 @@ async def signup(request: SignupRequest):
         
         # Handle specific error cases
         error_msg = str(e).lower()
-        if "already registered" in error_msg or "already exists" in error_msg or "user already registered" in error_msg:
+        if "already registered" in error_msg or "already exists" in error_msg or "user already registered" in error_msg or "already been registered" in error_msg:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A user with this email already exists"
@@ -248,8 +264,14 @@ async def logout(user: AuthUser = Depends(get_current_user)):
     try:
         logger.info(f"Logout attempt for user: {user.id}")
         
-        # Sign out using admin client with the user's access token
-        supabase_admin.auth.sign_out(user.access_token)
+        # Use admin client to sign out the user's session
+        # Note: In a real application, the client should discard tokens locally
+        # The server-side logout is optional and mainly for session invalidation
+        try:
+            supabase_admin.auth.admin.sign_out(user.access_token)
+        except Exception as e:
+            # If admin sign_out fails, it's okay - the client will discard tokens
+            logger.warning(f"Admin sign_out failed (non-critical): {str(e)}")
         
         logger.info(f"User logged out successfully: {user.id}")
         

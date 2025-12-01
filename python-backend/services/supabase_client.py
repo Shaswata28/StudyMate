@@ -40,15 +40,13 @@ def get_user_client(access_token: str) -> Client:
         courses = user_client.table("courses").select("*").execute()
         ```
     """
-    return create_client(
+    client = create_client(
         config.SUPABASE_URL,
-        config.SUPABASE_ANON_KEY,
-        options={
-            "headers": {
-                "Authorization": f"Bearer {access_token}"
-            }
-        }
+        config.SUPABASE_ANON_KEY
     )
+    # Set the access token for this client
+    client.auth.set_session(access_token, access_token)
+    return client
 
 
 def get_anon_client() -> Client:
