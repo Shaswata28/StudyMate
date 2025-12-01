@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => ({
       deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "server/**"],
     },
     proxy: {
-      '/api/chat': {
+      '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
@@ -39,9 +39,9 @@ function expressPlugin(): Plugin {
       const app = createServer();
 
       // Add Express app as middleware to Vite dev server
-      // Use a conditional middleware to skip /api/chat (handled by proxy)
+      // Use a conditional middleware to skip /api routes (handled by proxy)
       server.middlewares.use((req, res, next) => {
-        if (req.url?.startsWith('/api/chat')) {
+        if (req.url?.startsWith('/api')) {
           // Let Vite's proxy handle this
           return next();
         }
