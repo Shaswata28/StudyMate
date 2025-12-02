@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import Workspace from "@/components/Workspace";
@@ -7,6 +7,9 @@ import ProfileModal from "@/components/ProfileModal";
 import SearchCourseModal from "@/components/SearchCourseModal";
 import MaterialsModal from "@/components/MaterialsModal";
 import { API_BASE_URL } from "@/lib/constants";
+import { courseService, Course as APICourse } from "@/lib/courses";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "@/lib/toast";
 
 interface Course {
   id: string;
@@ -31,12 +34,10 @@ interface Message {
 }
 
 export default function Dashboard() {
-  const [courses, setCourses] = useState<Course[]>([
-    { id: "1", name: "CSE 312", color: "#FEAE01", active: true },
-    { id: "2", name: "CSE 123", color: "#1FC209", active: false },
-  ]);
-
-  const [activeCourse, setActiveCourse] = useState<Course>(courses[0]);
+  const { user, isAuthenticated } = useAuth();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [activeCourse, setActiveCourse] = useState<Course | null>(null);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -46,6 +47,43 @@ export default function Dashboard() {
   const [pendingFiles, setPendingFiles] = useState<UploadedFile[]>([]); // Files waiting to be sent
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
+
+  // Color palette for courses
+  const courseColors = ["#FEAE01", "#1FC209", "#FF6B6B", "#4ECDC4", "#95E1D3", "#F38181"];
+
+  // Load courses on mount
+  useEffect(() => {
+    loadCourses();
+  }, []);
+
+  const loadCourses = async () => {
+    try {
+      setIsLoadingCourses(true);
+      const apiCourses = await courseService.getCourses();
+      
+      // Convert API courses to UI courses with colors
+      const uiCourses: Course[] = apiCourses.map((course, index) => ({
+        id: course.id,
+        name: course.name,
+        color: courseColors[index % courseColors.length],
+        active: false,
+      }));
+
+      setCourses(uiCourses);
+      
+      // Set first course as active if available
+      if (uiCourses.length > 0) {
+        const firstCourse = { ...uiCourses[0], active: true };
+        setCourses(prev => prev.map((c, i) => i === 0 ? firstCourse : c));
+        setActiveCourse(firstCourse);
+      }
+    } catch (error) {
+      console.error('Failed to load courses:', error);
+      toast.error('Failed to load courses');
+    } finally {
+      setIsLoadingCourses(false);
+    }
+  };
 
   const handleCourseSelect = (courseId: string) => {
     const updatedCourses = courses.map((c) => ({
@@ -61,15 +99,25 @@ export default function Dashboard() {
     }
   };
 
-  const handleAddCourse = (courseName: string, color: string) => {
-    const newCourse: Course = {
-      id: Date.now().toString(),
-      name: courseName,
-      color: color,
-      active: false,
-    };
+  const handleAddCourse = async (courseName: string, color: string) => {
+    try {
+      // Create course via API
+      const apiCourse = await courseService.createCourse({ name: courseName });
+      
+      // Add to UI with the provided color
+      const newCourse: Course = {
+        id: apiCourse.id,
+        name: apiCourse.name,
+        color: color,
+        active: false,
+      };
 
-    setCourses((prev) => [...prev, newCourse]);
+      setCourses((prev) => [...prev, newCourse]);
+      toast.success(`Course "${courseName}" created successfully!`);
+    } catch (error) {
+      console.error('Failed to create course:', error);
+      toast.error('Failed to create course. Please try again.');
+    }
   };
 
   const handleFileUpload = (files: File[]) => {
@@ -209,18 +257,46 @@ export default function Dashboard() {
 
         <div className="flex-1 flex flex-col overflow-hidden relative transition-all duration-300 ease-in-out">
           <Header />
-          <Workspace
-            courseName={activeCourse.name}
-            courseColor={activeCourse.color}
-            uploadedFiles={uploadedFiles}
-            pendingFiles={pendingFiles}
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            onFileUpload={handleFileUpload}
-            onRemovePendingFile={handleRemovePendingFile}
-            onMaterialsClick={() => setIsMaterialsModalOpen(true)}
-            isLoadingResponse={isLoadingResponse}
-          />
+          {isLoadingCourses ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-studymate-black dark:border-white mx-auto mb-4"></div>
+                <p className="font-audiowide text-[14px] tracking-[1.4px] text-black/60 dark:text-white/60">
+                  Loading courses...
+                </p>
+              </div>
+            </div>
+          ) : !activeCourse ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center max-w-md px-4">
+                <h2 className="font-audiowide text-[24px] tracking-[2.4px] text-black dark:text-white mb-4">
+                  No Courses Yet
+                </h2>
+                <p className="font-roboto text-[14px] text-black/60 dark:text-white/60 mb-6">
+                  Create your first course to get started with StudyMate
+                </p>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-6 py-3 bg-studymate-black dark:bg-white text-white dark:text-black font-audiowide text-[13px] tracking-[1.3px] rounded hover:shadow-lg transition-all duration-200"
+                >
+                  Create Course
+                </button>
+              </div>
+            </div>
+          ) : (
+            <Workspace
+              courseName={activeCourse.name}
+              courseColor={activeCourse.color}
+              uploadedFiles={uploadedFiles}
+              pendingFiles={pendingFiles}
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              onFileUpload={handleFileUpload}
+              onRemovePendingFile={handleRemovePendingFile}
+              onMaterialsClick={() => setIsMaterialsModalOpen(true)}
+              isLoadingResponse={isLoadingResponse}
+            />
+          )}
         </div>
       </div>
 

@@ -123,8 +123,6 @@ export default function Sidebar({
       {/* User Profile Section */}
       <div className={`px-4 pb-6 ${isCollapsed ? 'flex justify-center' : ''}`}>
         <UserProfile
-          userName="Arnob Das"
-          userPlan="free"
           isCollapsed={isCollapsed}
           onProfileModalOpen={onProfileClick}
         />

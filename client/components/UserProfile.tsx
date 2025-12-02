@@ -1,29 +1,39 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Settings, HelpCircle, Info } from "lucide-react";
-import { useTheme } from "./ThemeProvider";
+import { useAuth } from "@/hooks/use-auth";
 
 interface UserProfileProps {
-  userName: string;
-  userPlan: string;
   isCollapsed: boolean;
   onProfileModalOpen?: () => void;
 }
 
 export default function UserProfile({
-  userName,
-  userPlan,
   isCollapsed,
   onProfileModalOpen,
 }: UserProfileProps) {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Extract user name from email (part before @)
+  const getUserName = (email: string) => {
+    const namePart = email.split('@')[0];
+    // Convert to title case (e.g., "john.doe" -> "John Doe")
+    return namePart
+      .split(/[._-]/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const userName = user?.email ? getUserName(user.email) : "User";
+  
+  // Get initials from user name
   const initials = userName
-    .split(" ")
-    .map((name) => name[0])
-    .join("")
+    .split(' ')
+    .map(word => word[0])
+    .join('')
     .toUpperCase()
     .slice(0, 2);
 
@@ -41,10 +51,14 @@ export default function UserProfile({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    console.log("Logging out...");
-    setIsOpen(false);
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setIsOpen(false);
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   const handleOpenModal = () => {
@@ -67,11 +81,16 @@ export default function UserProfile({
         </div>
 
         {/* User Info - only show when expanded */}
-        {!isCollapsed && (
-          <div className="flex flex-col text-left">
-            <span className="font-audiowide text-sm text-black dark:text-white">{userName}</span>
-            <span className="font-audiowide text-[11px] text-[#333232] dark:text-gray-400">
-              {userPlan}
+        {!isCollapsed && user && (
+          <div className="flex flex-col text-left overflow-hidden">
+            <span className="font-audiowide text-[13px] text-black dark:text-white truncate font-semibold">
+              {userName}
+            </span>
+            <span className="font-roboto text-[11px] text-[#666] dark:text-gray-400 truncate">
+              {user.email}
+            </span>
+            <span className="font-audiowide text-[10px] text-[#333232] dark:text-gray-500 uppercase tracking-wider">
+              Free Tier
             </span>
           </div>
         )}

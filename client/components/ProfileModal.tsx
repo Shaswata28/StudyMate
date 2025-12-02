@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 type TabType = "settings" | "about" | "help";
 
@@ -11,6 +12,7 @@ interface ProfileModalProps {
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("settings");
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(0);
+  const { user } = useAuth();
 
   if (!isOpen) return null;
 
@@ -112,25 +114,39 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="fullname" className="font-audiowide text-[13px] tracking-[1.3px] text-[#201F1F] dark:text-gray-300 block mb-2">
-                      Full Name
-                    </label>
-                    <input
-                      id="fullname"
-                      type="text"
-                      defaultValue="Arnob Das"
-                      className="w-full px-3 py-2 border-2 border-black dark:border-white rounded bg-white dark:bg-slate-700 font-roboto text-[13px] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-studymate-orange dark:focus:ring-studymate-green transition-colors"
-                    />
-                  </div>
-                  <div>
                     <label htmlFor="email" className="font-audiowide text-[13px] tracking-[1.3px] text-[#201F1F] dark:text-gray-300 block mb-2">
                       Email
                     </label>
                     <input
                       id="email"
                       type="email"
-                      defaultValue="arnob@example.com"
-                      className="w-full px-3 py-2 border-2 border-black dark:border-white rounded bg-white dark:bg-slate-700 font-roboto text-[13px] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-studymate-orange dark:focus:ring-studymate-green transition-colors"
+                      value={user?.email || ''}
+                      disabled
+                      className="w-full px-3 py-2 border-2 border-black/30 dark:border-white/30 rounded bg-gray-100 dark:bg-slate-600 font-roboto text-[13px] text-black/70 dark:text-white/70 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="user-id" className="font-audiowide text-[13px] tracking-[1.3px] text-[#201F1F] dark:text-gray-300 block mb-2">
+                      User ID
+                    </label>
+                    <input
+                      id="user-id"
+                      type="text"
+                      value={user?.id || ''}
+                      disabled
+                      className="w-full px-3 py-2 border-2 border-black/30 dark:border-white/30 rounded bg-gray-100 dark:bg-slate-600 font-roboto text-[13px] text-black/70 dark:text-white/70 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="created-at" className="font-audiowide text-[13px] tracking-[1.3px] text-[#201F1F] dark:text-gray-300 block mb-2">
+                      Member Since
+                    </label>
+                    <input
+                      id="created-at"
+                      type="text"
+                      value={user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                      disabled
+                      className="w-full px-3 py-2 border-2 border-black/30 dark:border-white/30 rounded bg-gray-100 dark:bg-slate-600 font-roboto text-[13px] text-black/70 dark:text-white/70 cursor-not-allowed"
                     />
                   </div>
                 </div>
