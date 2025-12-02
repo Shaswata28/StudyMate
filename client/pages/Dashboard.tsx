@@ -6,6 +6,7 @@ import NewCourseModal from "@/components/NewCourseModal";
 import ProfileModal from "@/components/ProfileModal";
 import SearchCourseModal from "@/components/SearchCourseModal";
 import MaterialsModal from "@/components/MaterialsModal";
+import { API_BASE_URL } from "@/lib/constants";
 
 interface Course {
   id: string;
@@ -140,7 +141,7 @@ export default function Dashboard() {
       setPendingFiles([]);
 
       // Call FastAPI backend
-      const response = await fetch("/api/chat", {
+      const response = await fetch(`${API_BASE_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

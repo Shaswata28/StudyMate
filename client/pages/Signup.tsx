@@ -100,7 +100,7 @@ export default function Signup() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleStep1Submit = (e: React.FormEvent) => {
+  const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateStep1()) {
@@ -110,11 +110,25 @@ export default function Signup() {
       return;
     }
 
-    setShowStepAnimation(true);
-    setTimeout(() => {
-      setShowStepAnimation(false);
-      setStep(2);
-    }, 600);
+    setIsLoading(true);
+
+    try {
+      // Call signup API
+      await signup({ email, password });
+      
+      // On success, transition to step 2
+      setIsLoading(false);
+      setShowStepAnimation(true);
+      setTimeout(() => {
+        setShowStepAnimation(false);
+        setStep(2);
+      }, 600);
+    } catch (error) {
+      setIsLoading(false);
+      const errorMessage = error instanceof Error ? error.message : "Signup failed. Please try again.";
+      toast.error("Signup failed", errorMessage);
+      // Stay on step 1 if signup fails
+    }
   };
 
   const handleStep2Submit = async (e: React.FormEvent) => {
@@ -130,10 +144,7 @@ export default function Signup() {
     setIsLoading(true);
 
     try {
-      // Step 1: Create user account
-      await signup({ email, password });
-      
-      // Step 2: Save academic profile
+      // Save academic profile (signup already happened in step 1)
       await saveAcademicProfile({
         grade: [grade], // Convert to array as per backend schema
         semester_type: semesterType as 'double' | 'tri',
@@ -141,12 +152,13 @@ export default function Signup() {
         subject: [subject], // Convert to array as per backend schema
       });
 
-      toast.success("Signup successful!", "Redirecting to onboarding...");
+      toast.success("Registration complete!", "Redirecting to onboarding...");
       setTimeout(() => navigate("/onboarding"), 600);
     } catch (error) {
       setIsLoading(false);
-      const errorMessage = error instanceof Error ? error.message : "Signup failed. Please try again.";
-      toast.error("Signup failed", errorMessage);
+      const errorMessage = error instanceof Error ? error.message : "Failed to save academic profile. Please try again.";
+      toast.error("Profile save failed", errorMessage);
+      // Keep user authenticated even if academic profile fails (Requirement 5.2)
     }
   };
 

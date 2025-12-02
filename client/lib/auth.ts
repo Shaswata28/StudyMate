@@ -71,44 +71,64 @@ class AuthService {
    * Register a new user
    */
   async signup(data: SignupData): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Signup failed');
+      if (!response.ok) {
+        const errorMessage = await this.extractErrorMessage(response);
+        throw new Error(errorMessage);
+      }
+
+      const authData: AuthResponse = await response.json();
+      this.setTokens(authData);
+      return authData;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Network error')) {
+        throw error;
+      }
+      if (error instanceof Error && !error.message.includes('fetch')) {
+        throw error;
+      }
+      throw new Error('Network error. Please check your connection.');
     }
-
-    const authData: AuthResponse = await response.json();
-    this.setTokens(authData);
-    return authData;
   }
 
   /**
    * Login an existing user
    */
   async login(data: LoginData): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Login failed');
+      if (!response.ok) {
+        const errorMessage = await this.extractErrorMessage(response);
+        throw new Error(errorMessage);
+      }
+
+      const authData: AuthResponse = await response.json();
+      this.setTokens(authData);
+      return authData;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Network error')) {
+        throw error;
+      }
+      if (error instanceof Error && !error.message.includes('fetch')) {
+        throw error;
+      }
+      throw new Error('Network error. Please check your connection.');
     }
-
-    const authData: AuthResponse = await response.json();
-    this.setTokens(authData);
-    return authData;
   }
 
   /**
@@ -214,52 +234,74 @@ class AuthService {
       throw new Error('No access token available');
     }
 
-    // Add authorization header
-    const headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`,
-    };
+    try {
+      // Add authorization header
+      const headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`,
+      };
 
-    let response = await fetch(url, {
-      ...options,
-      headers,
-    });
+      let response = await fetch(url, {
+        ...options,
+        headers,
+      });
 
-    // Handle token expiration
-    if (response.status === 401) {
-      const refreshed = await this.refreshToken();
-      
-      if (refreshed) {
-        // Retry request with new token
-        const newToken = this.getAccessToken();
-        headers['Authorization'] = `Bearer ${newToken}`;
-        response = await fetch(url, {
-          ...options,
-          headers,
-        });
-      } else {
-        throw new Error('Authentication failed. Please login again.');
+      // Handle token expiration
+      if (response.status === 401) {
+        const refreshed = await this.refreshToken();
+        
+        if (refreshed) {
+          // Retry request with new token
+          const newToken = this.getAccessToken();
+          headers['Authorization'] = `Bearer ${newToken}`;
+          response = await fetch(url, {
+            ...options,
+            headers,
+          });
+        } else {
+          // Token refresh failed, clear tokens and throw error
+          this.clearTokens();
+          throw new Error('Authentication failed. Please login again.');
+        }
       }
-    }
 
-    return response;
+      return response;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Network error')) {
+        throw error;
+      }
+      if (error instanceof Error && !error.message.includes('fetch')) {
+        throw error;
+      }
+      throw new Error('Network error. Please check your connection.');
+    }
   }
 
   /**
    * Save academic profile (Step 2 of signup)
    */
   async saveAcademicProfile(profile: AcademicProfile): Promise<void> {
-    const response = await this.fetchWithAuth(`${API_BASE_URL}/academic`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(profile),
-    });
+    try {
+      const response = await this.fetchWithAuth(`${API_BASE_URL}/academic`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profile),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to save academic profile');
+      if (!response.ok) {
+        const errorMessage = await this.extractErrorMessage(response);
+        throw new Error(errorMessage);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Network error')) {
+        throw error;
+      }
+      if (error instanceof Error && !error.message.includes('fetch')) {
+        throw error;
+      }
+      throw new Error('Network error. Please check your connection.');
     }
   }
 
@@ -267,17 +309,27 @@ class AuthService {
    * Save user preferences (from questionnaire)
    */
   async savePreferences(preferences: UserPreferences): Promise<void> {
-    const response = await this.fetchWithAuth(`${API_BASE_URL}/preferences`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ prefs: preferences }),
-    });
+    try {
+      const response = await this.fetchWithAuth(`${API_BASE_URL}/preferences`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(preferences),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to save preferences');
+      if (!response.ok) {
+        const errorMessage = await this.extractErrorMessage(response);
+        throw new Error(errorMessage);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Network error')) {
+        throw error;
+      }
+      if (error instanceof Error && !error.message.includes('fetch')) {
+        throw error;
+      }
+      throw new Error('Network error. Please check your connection.');
     }
   }
 
@@ -315,6 +367,63 @@ class AuthService {
     } catch (error) {
       console.error('Get academic profile failed:', error);
       return null;
+    }
+  }
+
+  // Helper methods
+
+  /**
+   * Extract error message from response detail field
+   * Handles various error response formats
+   */
+  private async extractErrorMessage(response: Response): Promise<string> {
+    try {
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        
+        // Extract from detail field (FastAPI standard)
+        if (error.detail) {
+          // Handle both string and object detail formats
+          if (typeof error.detail === 'string') {
+            return error.detail;
+          } else if (typeof error.detail === 'object' && error.detail.message) {
+            return error.detail.message;
+          }
+        }
+        
+        // Fallback to message field
+        if (error.message) {
+          return error.message;
+        }
+        
+        // Fallback to error field
+        if (error.error) {
+          return error.error;
+        }
+      }
+    } catch (e) {
+      // If JSON parsing fails, return generic message
+      console.error('Failed to parse error response:', e);
+    }
+    
+    // Default error messages based on status code
+    switch (response.status) {
+      case 400:
+        return 'Invalid request. Please check your input.';
+      case 401:
+        return 'Invalid or expired authentication token';
+      case 403:
+        return 'You do not have permission to perform this action.';
+      case 404:
+        return 'Resource not found.';
+      case 409:
+        return 'Resource already exists.';
+      case 500:
+        return 'An unexpected error occurred. Please try again.';
+      default:
+        return `Request failed with status ${response.status}`;
     }
   }
 

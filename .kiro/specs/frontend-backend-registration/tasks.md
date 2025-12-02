@@ -23,7 +23,13 @@
   - **Property 2: Duplicate email rejection**
   - **Validates: Requirements 1.3**
 
-- [ ] 2. Verify and test backend academic profile endpoints
+- [x] 2. Verify and test backend academic profile endpoints
+
+
+
+
+
+
   - Verify `/api/academic` POST endpoint creates profiles correctly
   - Verify `/api/academic` GET endpoint retrieves profiles correctly
   - Verify `/api/academic` PUT endpoint updates profiles correctly
@@ -39,7 +45,14 @@
   - **Property 5: Valid academic profile creates database record**
   - **Validates: Requirements 2.3**
 
-- [ ] 3. Verify and test backend preferences endpoints
+- [x] 3. Verify and test backend preferences endpoints
+
+
+
+
+
+
+
   - Verify `/api/preferences` POST endpoint creates preferences correctly
   - Verify `/api/preferences` GET endpoint retrieves preferences correctly
   - Verify `/api/preferences` PUT endpoint updates preferences correctly
@@ -55,7 +68,18 @@
   - **Property 12: Valid preferences creates database record**
   - **Validates: Requirements 9.3**
 
-- [ ] 4. Update frontend auth service for proper error handling
+- [x] 4. Update frontend auth service for proper error handling
+
+
+
+
+
+
+
+
+
+
+
   - Ensure error messages are extracted from response `detail` field
   - Verify token storage in localStorage after successful signup
   - Verify token refresh logic on 401 errors
@@ -75,7 +99,12 @@
   - **Property 10: Error messages extracted from detail field**
   - **Validates: Requirements 4.4, 4.5, 1.5**
 
-- [ ] 5. Update Signup component step 1 integration
+- [x] 5. Update Signup component step 1 integration
+
+
+
+
+
   - Verify form validation for email, password, name, and terms
   - Ensure signup API call is made with correct data format
   - Verify error display via toast notifications
@@ -92,7 +121,12 @@
   - **Property 14: Content-Type header for JSON requests**
   - **Validates: Requirements 6.1**
 
-- [ ] 6. Update Signup component step 2 integration
+- [x] 6. Update Signup component step 2 integration
+
+
+
+
+
   - Verify form validation for grade, semester type, semester, and subject
   - Ensure academic profile API call includes Authorization header
   - Verify error display via toast notifications
@@ -105,14 +139,28 @@
   - **Property 8: Failed academic profile preserves authentication**
   - **Validates: Requirements 5.2**
 
-- [ ] 7. Update onboarding/preferences flow integration
+- [x] 7. Update onboarding/preferences flow integration
+
+
+
+
+
+
+
+
+
   - Verify preferences form submits to `/api/preferences` with auth header
   - Verify error handling and display
   - Verify navigation to dashboard on success
   - Test loading states during API call
   - _Requirements: 9.1, 9.2, 9.5_
 
-- [ ] 8. Add environment variable configuration
+- [x] 8. Add environment variable configuration
+
+
+
+
+
   - Verify `VITE_API_URL` is properly configured in frontend
   - Verify all API calls use the configured base URL
   - Test with different environment configurations (dev, prod)
@@ -123,7 +171,12 @@
   - **Property 13: API requests use configured base URL**
   - **Validates: Requirements 6.5**
 
-- [ ] 9. Add comprehensive error handling tests
+- [x] 9. Add comprehensive error handling tests
+
+
+
+
+
   - Test network error handling (fetch failures)
   - Test validation error display (400 responses)
   - Test authentication error handling (401 responses)
@@ -135,7 +188,11 @@
   - **Property 9: HTTP status codes match operation types**
   - **Validates: Requirements 6.2, 6.3, 6.4, 4.1, 4.2, 4.3**
 
-- [ ] 10. Test complete registration flow end-to-end
+- [x] 10. Test complete registration flow end-to-end
+
+
+
+
   - Test full flow: signup → academic profile → preferences → dashboard
   - Test with valid data
   - Test with invalid data at each step
@@ -145,10 +202,18 @@
   - Verify tokens are managed correctly throughout
   - _Requirements: All_
 
-- [ ] 11. Checkpoint - Ensure all tests pass
+- [x] 11. Checkpoint - Ensure all tests pass
+
+
+
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Update documentation
+- [x] 12. Update documentation
+
+
+
+
+
   - Document registration flow in README
   - Document API endpoints and request/response formats
   - Document error codes and messages
