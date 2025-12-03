@@ -260,7 +260,7 @@ The following PostgreSQL extensions are enabled to support advanced functionalit
 
 ### 5. materials
 
-**Purpose**: Metadata for uploaded learning materials (PDFs, documents, images) with Supabase Storage integration.
+**Purpose**: Metadata for uploaded learning materials (PDFs, documents, images) with Supabase Storage integration. Includes OCR and vector embedding support for semantic search.
 
 **Relationship**: One-to-many with `courses` (course can have multiple materials)
 
@@ -274,6 +274,11 @@ The following PostgreSQL extensions are enabled to support advanced functionalit
 | `file_path` | TEXT | NOT NULL | Storage path: `{user_id}/{course_id}/{filename}` |
 | `file_type` | TEXT | NOT NULL | MIME type (e.g., `application/pdf`, `image/jpeg`) |
 | `file_size` | BIGINT | NOT NULL | File size in bytes (max 50MB = 52,428,800 bytes) |
+| `extracted_text` | TEXT | | Text content extracted via OCR from PDFs/images |
+| `embedding` | VECTOR(384) | | 384-dimensional vector embedding for semantic search |
+| `processing_status` | TEXT | DEFAULT 'pending', CHECK (processing_status IN ('pending', 'processing', 'completed', 'failed')) | Processing status tracking |
+| `processed_at` | TIMESTAMPTZ | | Timestamp when OCR/embedding processing completed |
+| `error_message` | TEXT | | Error details if processing failed |
 | `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Upload timestamp |
 | `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Last update timestamp (auto-updated) |
 
@@ -283,11 +288,21 @@ The following PostgreSQL extensions are enabled to support advanced functionalit
 - PDFs: `application/pdf`
 - Images: `image/jpeg`, `image/png`, `image/gif`, `image/webp`
 
+**Processing Status Values**:
+- `pending` - Uploaded, awaiting background processing
+- `processing` - OCR and embedding generation in progress
+- `completed` - Successfully processed with extracted text and embedding
+- `failed` - Processing failed, see error_message for details
+
 **Indexes**:
 - `idx_materials_course_id` - B-tree index on `course_id` for efficient course material queries
 - `idx_materials_file_path` - B-tree index on `file_path` for storage lookups
+- `idx_materials_processing_status` - B-tree index on `processing_status` for filtering by status
+- `idx_materials_embedding` - HNSW index on `embedding` for fast vector similarity search
 
-**Migration File**: `python-backend/migrations/002_create_tables.sql`
+**Migration Files**: 
+- `python-backend/migrations/002_create_tables.sql` (initial table)
+- `python-backend/migrations/005_add_material_ocr_embedding.sql` (OCR and embedding support)
 
 ---
 
@@ -909,6 +924,7 @@ All migration scripts are located in `python-backend/migrations/` and should be 
 | `002_create_tables.sql` | Create all tables with constraints and indexes | Requirements 3.1-7.5 |
 | `003_create_rls_policies.sql` | Enable RLS and create security policies | Requirements 1.3, 8.4 |
 | `004_rollback.sql` | Rollback script to drop all tables and policies | Requirement 8.5 |
+| `005_add_material_ocr_embedding.sql` | Add OCR and embedding support to materials table | Feature: material-ocr-embedding |
 
 ### Running Migrations
 
@@ -929,11 +945,21 @@ psql "postgresql://postgres:[password]@[project-ref].supabase.co:5432/postgres"
 \i migrations/001_enable_extensions.sql
 \i migrations/002_create_tables.sql
 \i migrations/003_create_rls_policies.sql
+\i migrations/005_add_material_ocr_embedding.sql
 ```
 
 #### Using Supabase Dashboard
 
 1. Navigate to SQL Editor in Supabase Dashboard
+2. Copy contents of migration file (use `MATERIAL_OCR_EMBEDDING_MIGRATION.sql` for comprehensive version with verification)
+3. Paste into SQL Editor
+4. Click "Run" to execute
+5. Verify success using the included verification queries
+
+**Note**: For the OCR and embedding migration, see the detailed guide at `python-backend/migrations/MATERIAL_OCR_EMBEDDING_README.md`
+
+#### Using Supabase Dashboard (continued)
+
 2. Copy contents of each migration file
 3. Execute in order (001 → 002 → 003)
 
