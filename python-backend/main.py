@@ -1,5 +1,5 @@
 """
-FastAPI application entry point for Gemini AI chat integration.
+FastAPI application entry point for Local AI Brain chat integration.
 """
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,10 +23,13 @@ from middleware.rate_limiter import limiter, rate_limit_exceeded_handler
 # Import logging middleware
 from middleware.logging_middleware import LoggingMiddleware
 
+# Import brain manager
+from services.brain_manager import brain_manager
+
 # Create FastAPI application
 app = FastAPI(
     title="StudyMate AI Chat API",
-    description="FastAPI backend for Gemini-powered AI chat functionality",
+    description="FastAPI backend for Local AI Brain-powered chat functionality",
     version="1.0.0"
 )
 
@@ -100,15 +103,45 @@ async def startup_event():
     logger.info("FastAPI backend starting up...")
     logger.info("=" * 60)
     logger.info("Configuration loaded successfully")
-    logger.info(f"  - Gemini Model: {config.GEMINI_MODEL}")
-    logger.info(f"  - Gemini Temperature: {config.GEMINI_TEMPERATURE}")
-    logger.info(f"  - Gemini Max Output Tokens: {config.GEMINI_MAX_OUTPUT_TOKENS}")
-    logger.info(f"  - Gemini Timeout: {config.GEMINI_TIMEOUT}s")
     logger.info(f"  - Rate Limiting: {config.RATE_LIMIT_REQUESTS} requests per {config.RATE_LIMIT_WINDOW}s")
     logger.info(f"  - CORS Allowed Origins: {', '.join(config.ALLOWED_ORIGINS)}")
-    logger.info(f"  - API Key Configured: {'Yes' if config.GEMINI_API_KEY else 'No'}")
+    logger.info("=" * 60)
+    
+    # Start AI Brain Service
+    logger.info("Starting AI Brain Service...")
+    try:
+        success = await brain_manager.start_brain()
+        if success:
+            logger.info("✓ AI Brain Service started successfully")
+        else:
+            logger.warning("✗ AI Brain Service failed to start - AI features will be disabled")
+            logger.warning("  The backend will continue running without AI capabilities")
+    except Exception as e:
+        logger.error(f"✗ Error starting AI Brain Service: {str(e)}")
+        logger.warning("  The backend will continue running without AI capabilities")
+        logger.warning("  Check that Ollama is installed and running")
+    
     logger.info("=" * 60)
     logger.info("StudyMate AI Chat API is ready to accept requests")
+    logger.info("=" * 60)
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Gracefully shutdown services."""
+    logger.info("=" * 60)
+    logger.info("FastAPI backend shutting down...")
+    logger.info("=" * 60)
+    
+    # Stop AI Brain Service
+    logger.info("Stopping AI Brain Service...")
+    try:
+        await brain_manager.stop_brain()
+        logger.info("✓ AI Brain Service stopped successfully")
+    except Exception as e:
+        logger.error(f"✗ Error stopping AI Brain Service: {str(e)}")
+    
+    logger.info("=" * 60)
+    logger.info("Shutdown complete")
     logger.info("=" * 60)
 
 if __name__ == "__main__":

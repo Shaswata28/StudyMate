@@ -2,6 +2,7 @@
 Chat router for handling AI chat requests with Supabase integration.
 Implements chat endpoints with validation, rate limiting, error handling,
 and chat history persistence to Supabase.
+Uses local AI brain service for AI responses.
 """
 
 from fastapi import APIRouter, Request, HTTPException, Depends, status
@@ -11,11 +12,11 @@ from typing import List, Optional
 import logging
 
 from models.schemas import ChatRequest, ChatResponse, ErrorResponse, Message
-from services.gemini_service import (
-    gemini_service,
-    GeminiAPIError,
-    GeminiTimeoutError,
-    GeminiServiceError
+from services.local_ai_service import (
+    local_ai_service,
+    LocalAIAPIError,
+    LocalAITimeoutError,
+    LocalAIServiceError
 )
 from services.auth_service import get_current_user, get_current_user_optional, AuthUser
 from services.supabase_client import get_user_client
@@ -34,7 +35,7 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest):
     """
     Handle chat requests from the frontend.
     
-    Validates the request, calls the Gemini API with message and history,
+    Validates the request, calls the Local AI brain service with message and history,
     and returns the AI response with a timestamp.
     
     Args:
@@ -55,8 +56,8 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest):
             f"Attachments: {len(chat_request.attachments)}"
         )
         
-        # Call Gemini service with attachments
-        response_text = gemini_service.generate_response(
+        # Call Local AI service with attachments
+        response_text = await local_ai_service.generate_response(
             message=chat_request.message,
             history=chat_request.history if chat_request.history else None,
             attachments=chat_request.attachments if chat_request.attachments else None
@@ -71,7 +72,7 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest):
         logger.info("Chat request completed successfully")
         return response
         
-    except GeminiTimeoutError as e:
+    except LocalAITimeoutError as e:
         # Handle timeout errors (503)
         logger.error(f"Timeout error: {str(e)}")
         return JSONResponse(
@@ -82,20 +83,20 @@ async def chat_endpoint(request: Request, chat_request: ChatRequest):
             }
         )
         
-    except GeminiAPIError as e:
-        # Handle Gemini API errors (503)
-        logger.error(f"Gemini API error: {str(e)}")
+    except LocalAIAPIError as e:
+        # Handle Local AI API errors (503)
+        logger.error(f"Local AI API error: {str(e)}")
         return JSONResponse(
             status_code=503,
             content={
                 "error": str(e),
-                "code": "GEMINI_API_ERROR"
+                "code": "LOCAL_AI_API_ERROR"
             }
         )
         
-    except GeminiServiceError as e:
+    except LocalAIServiceError as e:
         # Handle general service errors (500)
-        logger.error(f"Gemini service error: {str(e)}")
+        logger.error(f"Local AI service error: {str(e)}")
         return JSONResponse(
             status_code=500,
             content={
@@ -176,7 +177,7 @@ async def save_chat_message(
     
     This endpoint combines the chat functionality with persistence:
     1. Verifies course ownership
-    2. Sends message to Gemini AI
+    2. Sends message to Local AI brain service
     3. Saves both user message and AI response to chat_history table
     
     The chat history is stored as a JSONB array of message objects.
@@ -210,8 +211,8 @@ async def save_chat_message(
             f"Attachments: {len(chat_request.attachments)}"
         )
         
-        # Call Gemini service with attachments
-        response_text = gemini_service.generate_response(
+        # Call Local AI service with attachments
+        response_text = await local_ai_service.generate_response(
             message=chat_request.message,
             history=chat_request.history if chat_request.history else None,
             attachments=chat_request.attachments if chat_request.attachments else None
@@ -251,7 +252,7 @@ async def save_chat_message(
         
     except HTTPException:
         raise
-    except GeminiTimeoutError as e:
+    except LocalAITimeoutError as e:
         # Handle timeout errors (503)
         logger.error(f"Timeout error: {str(e)}")
         return JSONResponse(
@@ -261,19 +262,19 @@ async def save_chat_message(
                 "code": "TIMEOUT_ERROR"
             }
         )
-    except GeminiAPIError as e:
-        # Handle Gemini API errors (503)
-        logger.error(f"Gemini API error: {str(e)}")
+    except LocalAIAPIError as e:
+        # Handle Local AI API errors (503)
+        logger.error(f"Local AI API error: {str(e)}")
         return JSONResponse(
             status_code=503,
             content={
                 "error": str(e),
-                "code": "GEMINI_API_ERROR"
+                "code": "LOCAL_AI_API_ERROR"
             }
         )
-    except GeminiServiceError as e:
+    except LocalAIServiceError as e:
         # Handle general service errors (500)
-        logger.error(f"Gemini service error: {str(e)}")
+        logger.error(f"Local AI service error: {str(e)}")
         return JSONResponse(
             status_code=500,
             content={

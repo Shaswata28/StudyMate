@@ -202,5 +202,5 @@ All errors are displayed via toast notifications with clear, user-friendly messa
 - **Backend**: FastAPI, Python 3.8+
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: JWT-based with Supabase Auth
-- **AI**: Google Gemini API
+- **AI**: Local AI Brain Service (Qwen 2.5, DeepSeek OCR, Whisper Turbo, mxbai-embed-large)
 - **Package Manager**: pnpm

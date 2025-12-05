@@ -50,7 +50,8 @@ python-backend/
 ├── scripts/                         # NEW - Migration scripts
 │   └── run_migrations.py
 ├── services/
-│   ├── gemini_service.py           # Existing Gemini integration
+│   ├── local_ai_service.py         # Local AI Brain integration
+│   ├── brain_manager.py            # Brain process manager
 │   ├── supabase_client.py          # NEW - Supabase client
 │   └── auth_service.py             # NEW - Auth utilities
 ├── routers/
@@ -114,14 +115,14 @@ The requirements document remains unchanged as it describes the system requireme
 
 ## Integration with Existing Chat Feature
 
-The existing Gemini chat integration (`python-backend/routers/chat.py`) will be updated to:
+The chat integration (`python-backend/routers/chat.py`) uses the Local AI Brain service:
 - Store chat history in Supabase `chat_history` table
 - Retrieve conversation context from Supabase
 - Associate chats with courses and users
-- Maintain existing Gemini API integration
+- AI powered by Local AI Brain Service (Qwen 2.5, DeepSeek OCR, Whisper Turbo)
 
 This creates a complete system where:
 - Users authenticate via Supabase Auth
 - User data stored in Supabase PostgreSQL
-- AI chat powered by Gemini API
+- AI chat powered by Local AI Brain Service
 - Chat history persisted in Supabase

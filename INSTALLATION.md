@@ -93,7 +93,6 @@ Required environment variables:
 - `SUPABASE_URL`: Your Supabase project URL
 - `SUPABASE_KEY`: Your Supabase anon/public key
 - `SUPABASE_SERVICE_KEY`: Your Supabase service role key
-- `GEMINI_API_KEY`: Your Google Gemini API key
 
 ## Running the Application
 

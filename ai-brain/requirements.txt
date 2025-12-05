@@ -1,0 +1,24 @@
+# AI Brain Service Dependencies
+
+# FastAPI and server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Ollama client
+ollama==0.1.6
+
+# Whisper for audio transcription (optional - downloads ~3GB model on first use)
+# Audio features will be disabled if Whisper fails to load
+openai-whisper==20231117
+
+# PyTorch for model operations
+torch>=2.2.0
+torchaudio>=2.2.0
+
+# HTTP client for requests
+httpx>=0.25.2,<0.26.0
+
+# Additional dependencies
+python-multipart==0.0.6  # For file uploads
+PyMuPDF>=1.23.0  # For PDF processing (also known as fitz)
+Pillow>=10.0.0  # For image processing

@@ -37,9 +37,6 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# Gemini API (for AI chat)
-GEMINI_API_KEY=your_gemini_api_key
-
 # CORS (for development)
 ALLOWED_ORIGINS=http://localhost:8080
 ```
@@ -120,9 +117,9 @@ Frontend will run on: `http://localhost:8080`
 - Each course has separate chat history
 
 ### ✅ AI Chat
-- Powered by Google Gemini
+- Powered by Local AI Brain Service
 - Context-aware responses
-- File attachment support (PDFs, images)
+- File attachment support (PDFs, images, audio)
 - Conversation history
 - Personalized based on your preferences
 
