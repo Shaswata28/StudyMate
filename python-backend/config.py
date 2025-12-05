@@ -34,6 +34,15 @@ class Config:
         self.SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
         self.SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         
+        # AI Brain Configuration
+        self.AI_BRAIN_ENDPOINT = os.getenv("AI_BRAIN_ENDPOINT", "http://localhost:8001")
+        self.AI_BRAIN_TIMEOUT = float(os.getenv("AI_BRAIN_TIMEOUT", "300.0"))  # 5 minutes default
+        
+        # Retry Configuration for transient failures
+        self.MAX_RETRY_ATTEMPTS = int(os.getenv("MAX_RETRY_ATTEMPTS", "3"))
+        self.RETRY_DELAY_SECONDS = float(os.getenv("RETRY_DELAY_SECONDS", "2.0"))
+        self.RETRY_BACKOFF_MULTIPLIER = float(os.getenv("RETRY_BACKOFF_MULTIPLIER", "2.0"))
+        
         # Validate required configuration
         self._validate()
     
@@ -72,6 +81,10 @@ class Config:
         logger.info(f"Rate Limit: {self.RATE_LIMIT_REQUESTS} requests per {self.RATE_LIMIT_WINDOW} seconds")
         logger.info(f"Allowed Origins: {', '.join(self.ALLOWED_ORIGINS)}")
         logger.info(f"Supabase URL: {self.SUPABASE_URL}")
+        logger.info(f"AI Brain Endpoint: {self.AI_BRAIN_ENDPOINT}")
+        logger.info(f"AI Brain Timeout: {self.AI_BRAIN_TIMEOUT}s")
+        logger.info(f"Max Retry Attempts: {self.MAX_RETRY_ATTEMPTS}")
+        logger.info(f"Retry Configuration: {self.RETRY_DELAY_SECONDS}s delay, {self.RETRY_BACKOFF_MULTIPLIER}x backoff")
 
 
 # Global configuration instance

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This feature adds automatic OCR and vector embedding capabilities to the materials system. When users upload PDFs or images, the system extracts text content and generates semantic embeddings for intelligent retrieval during AI conversations. The design uses an abstract provider pattern to support both immediate Gemini API implementation (Phase 1) and future router-based multi-model architecture (Phase 2).
+This feature adds automatic OCR and vector embedding capabilities to the materials system. When users upload PDFs or images, the system extracts text content and generates semantic embeddings for intelligent retrieval during AI conversations. The design integrates with the local AI Brain service (running on port 8001) which orchestrates specialized Ollama models: qwen3-vl:2b for text extraction and mxbai-embed-large for embeddings.
 
 ## Architecture
 
@@ -16,7 +16,7 @@ This feature adds automatic OCR and vector embedding capabilities to the materia
        │
        ▼
 ┌─────────────────────────────────────────┐
-│         FastAPI Backend                 │
+│    Python Backend (FastAPI)             │
 │  ┌───────────────────────────────────┐  │
 │  │  Materials Router                 │  │
 │  │  - Upload endpoint                │  │
@@ -32,11 +32,26 @@ This feature adds automatic OCR and vector embedding capabilities to the materia
 │           │                              │
 │           ▼                              │
 │  ┌───────────────────────────────────┐  │
-│  │  AI Provider (Abstract Interface) │  │
-│  │  ┌─────────────┐  ┌─────────────┐ │  │
-│  │  │   Gemini    │  │   Router    │ │  │
-│  │  │  (Phase 1)  │  │  (Phase 2)  │ │  │
-│  │  └─────────────┘  └─────────────┘ │  │
+│  │  AI Brain Client                  │  │
+│  │  - HTTP requests to Brain service │  │
+│  └────────┬──────────────────────────┘  │
+└───────────┼──────────────────────────────┘
+            │
+            ▼
+┌─────────────────────────────────────────┐
+│    AI Brain Service (Port 8001)         │
+│  ┌───────────────────────────────────┐  │
+│  │  /router endpoint                 │  │
+│  │  - OCR (qwen3-vl:2b)              │  │
+│  │  /utility/embed endpoint          │  │
+│  │  - Embeddings (mxbai-embed-large) │  │
+│  └───────────────────────────────────┘  │
+│           │                              │
+│           ▼                              │
+│  ┌───────────────────────────────────┐  │
+│  │  Ollama (Port 11434)              │  │
+│  │  - Model runtime                  │  │
+│  │  - VRAM management                │  │
 │  └───────────────────────────────────┘  │
 └─────────────────────────────────────────┘
        │                    │
@@ -48,43 +63,30 @@ This feature adds automatic OCR and vector embedding capabilities to the materia
 └──────────────┘    └──────────────┘
 ```
 
-### Phase 1: Gemini Implementation
+### Processing Flow
 
 ```
 Upload → Store File → Create DB Record → Background Job
                                               │
                                               ▼
                                     ┌─────────────────┐
-                                    │  Gemini Service │
-                                    │  - OCR          │
-                                    │  - Embeddings   │
-                                    └─────────────────┘
-                                              │
-                                              ▼
-                                    Update DB with results
-```
-
-### Phase 2: Router Architecture (Future)
-
-```
-Upload → Store File → Create DB Record → Background Job
-                                              │
-                                              ▼
-                                    ┌─────────────────┐
-                                    │ Router Service  │
-                                    │ (Orchestrator)  │
+                                    │ AI Brain Client │
                                     └────────┬────────┘
                                              │
                     ┌────────────────────────┼────────────────────────┐
-                    ▼                        ▼                        ▼
-            ┌──────────────┐        ┌──────────────┐        ┌──────────────┐
-            │  DeepSeek    │        │  Llama 3.2   │        │ Qwen Coder   │
-            │  (OCR)       │        │  (Chat)      │        │ (Code)       │
-            │ Google Colab │        │ Google Colab │        │ Google Colab │
-            └──────────────┘        └──────────────┘        └──────────────┘
-                    │
-                    ▼
-          Update DB with results
+                    ▼                                                 ▼
+            POST /router                                    POST /utility/embed
+            (with image/PDF)                                (with text)
+                    │                                                 │
+                    ▼                                                 ▼
+            ┌──────────────┐                                ┌──────────────┐
+            │  qwen3-vl:2b │                                │  mxbai-embed │
+            │  OCR Model   │                                │  Model       │
+            └──────┬───────┘                                └──────┬───────┘
+                   │                                               │
+                   └───────────────────┬───────────────────────────┘
+                                       ▼
+                              Update DB with results
 ```
 
 ## Components and Interfaces
@@ -95,7 +97,7 @@ Upload → Store File → Create DB Record → Background Job
 ```sql
 -- New columns to add to existing materials table
 ALTER TABLE materials ADD COLUMN extracted_text TEXT;
-ALTER TABLE materials ADD COLUMN embedding VECTOR(384);
+ALTER TABLE materials ADD COLUMN embedding VECTOR(1024);  -- mxbai-embed-large uses 1024 dimensions
 ALTER TABLE materials ADD COLUMN processing_status TEXT DEFAULT 'pending' 
     CHECK (processing_status IN ('pending', 'processing', 'completed', 'failed'));
 ALTER TABLE materials ADD COLUMN processed_at TIMESTAMPTZ;
@@ -106,120 +108,139 @@ CREATE INDEX idx_materials_processing_status ON materials(processing_status);
 CREATE INDEX idx_materials_embedding ON materials USING hnsw (embedding vector_cosine_ops);
 ```
 
-### 2. AI Provider Interface (Abstract)
+### 2. AI Brain Client
 
 ```python
-from abc import ABC, abstractmethod
+import httpx
 from typing import Optional
 
-class AIProvider(ABC):
-    """Abstract interface for AI providers (Gemini, Router, etc.)"""
+class AIBrainClient:
+    """Client for communicating with the AI Brain service"""
     
-    @abstractmethod
-    async def extract_text(self, file_data: bytes, mime_type: str) -> str:
-        """Extract text from file using OCR"""
-        pass
+    def __init__(self, brain_endpoint: str = "http://localhost:8001"):
+        self.brain_endpoint = brain_endpoint
+        self.timeout = httpx.Timeout(300.0)  # 5 minute timeout for OCR
     
-    @abstractmethod
-    async def generate_embedding(self, text: str) -> list[float]:
-        """Generate vector embedding from text"""
-        pass
-    
-    @abstractmethod
-    async def chat_with_context(
-        self, 
-        message: str, 
-        context: list[str],
-        history: Optional[list] = None
-    ) -> str:
-        """Generate chat response with material context"""
-        pass
-```
-
-### 3. Gemini Provider Implementation (Phase 1)
-
-```python
-class GeminiProvider(AIProvider):
-    """Gemini API implementation of AI provider"""
-    
-    def __init__(self, api_key: str):
-        self.client = genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
-    
-    async def extract_text(self, file_data: bytes, mime_type: str) -> str:
-        """Use Gemini vision/PDF capabilities for OCR"""
-        # Implementation using Gemini API
-        pass
+    async def extract_text(self, file_data: bytes, filename: str, prompt: str = "Extract all text from this document") -> str:
+        """
+        Extract text from file using AI Brain's OCR endpoint
+        
+        Args:
+            file_data: File content as bytes
+            filename: Original filename (for content type detection)
+            prompt: Instruction prompt for OCR
+            
+        Returns:
+            Extracted text content
+        """
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            files = {"image": (filename, file_data)}
+            data = {"prompt": prompt}
+            
+            response = await client.post(
+                f"{self.brain_endpoint}/router",
+                files=files,
+                data=data
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            return result["response"]
     
     async def generate_embedding(self, text: str) -> list[float]:
-        """Use Gemini embedding model"""
-        # Implementation using Gemini embedding API
-        pass
+        """
+        Generate vector embedding from text using AI Brain's embedding endpoint
+        
+        Args:
+            text: Text to embed
+            
+        Returns:
+            Embedding vector (dimension depends on model)
+        """
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.post(
+                f"{self.brain_endpoint}/utility/embed",
+                json={"text": text}
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            return result["embedding"]
     
-    async def chat_with_context(
-        self, 
-        message: str, 
-        context: list[str],
-        history: Optional[list] = None
-    ) -> str:
-        """Generate response with material context"""
-        # Implementation using Gemini chat API
-        pass
+    async def health_check(self) -> bool:
+        """
+        Check if AI Brain service is available
+        
+        Returns:
+            True if service is healthy, False otherwise
+        """
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(f"{self.brain_endpoint}/")
+                return response.status_code == 200
+        except Exception:
+            return False
 ```
 
-### 4. Router Provider Implementation (Phase 2 - Future)
-
-```python
-class RouterProvider(AIProvider):
-    """Router-based multi-model implementation"""
-    
-    def __init__(self, router_endpoint: str, api_key: str):
-        self.router_endpoint = router_endpoint
-        self.api_key = api_key
-    
-    async def extract_text(self, file_data: bytes, mime_type: str) -> str:
-        """Route to DeepSeek OCR model in Colab"""
-        # POST to router_endpoint/ocr with task routing
-        pass
-    
-    async def generate_embedding(self, text: str) -> list[float]:
-        """Route to embedding model"""
-        # POST to router_endpoint/embed with task routing
-        pass
-    
-    async def chat_with_context(
-        self, 
-        message: str, 
-        context: list[str],
-        history: Optional[list] = None
-    ) -> str:
-        """Route to Llama 3.2 or Qwen Coder based on query type"""
-        # Router determines if it's code-related → Qwen Coder
-        # Otherwise → Llama 3.2
-        pass
-```
-
-### 5. Material Processing Service
+### 3. Material Processing Service
 
 ```python
 class MaterialProcessingService:
     """Handles background processing of uploaded materials"""
     
-    def __init__(self, ai_provider: AIProvider, supabase_client):
-        self.ai_provider = ai_provider
+    def __init__(self, ai_brain_client: AIBrainClient, supabase_client):
+        self.ai_brain = ai_brain_client
         self.supabase = supabase_client
     
     async def process_material(self, material_id: str):
         """
         Process a material: extract text and generate embedding
+        
+        Steps:
+        1. Update status to 'processing'
+        2. Download file from Supabase storage
+        3. Extract text using AI Brain OCR
+        4. Generate embedding using AI Brain
+        5. Update database with results
+        6. Update status to 'completed' or 'failed'
         """
-        # 1. Update status to 'processing'
-        # 2. Download file from storage
-        # 3. Extract text using AI provider
-        # 4. Generate embedding using AI provider
-        # 5. Update database with results
-        # 6. Update status to 'completed' or 'failed'
-        pass
+        try:
+            # Update status to processing
+            await self._update_status(material_id, "processing")
+            
+            # Get material record
+            material = await self._get_material(material_id)
+            
+            # Download file from storage
+            file_data = await self._download_file(material["file_path"])
+            
+            # Extract text using AI Brain
+            extracted_text = await self.ai_brain.extract_text(
+                file_data=file_data,
+                filename=material["name"]
+            )
+            
+            # Generate embedding if text is not empty
+            embedding = None
+            if extracted_text.strip():
+                embedding = await self.ai_brain.generate_embedding(extracted_text)
+            
+            # Update database with results
+            await self._update_material_data(
+                material_id=material_id,
+                extracted_text=extracted_text,
+                embedding=embedding,
+                status="completed"
+            )
+            
+        except Exception as e:
+            # Log error and update status to failed
+            logger.error(f"Material processing failed for {material_id}: {e}")
+            await self._update_status(
+                material_id=material_id,
+                status="failed",
+                error_message=str(e)
+            )
     
     async def search_materials(
         self, 
@@ -229,14 +250,27 @@ class MaterialProcessingService:
     ) -> list[dict]:
         """
         Semantic search for materials
+        
+        Steps:
+        1. Generate embedding for query using AI Brain
+        2. Perform vector similarity search in database
+        3. Return top results with scores
         """
-        # 1. Generate embedding for query
-        # 2. Perform vector similarity search
-        # 3. Return top results with scores
-        pass
+        # Generate query embedding
+        query_embedding = await self.ai_brain.generate_embedding(query)
+        
+        # Perform vector similarity search using pgvector
+        # This will be implemented using Supabase's vector search capabilities
+        results = await self._vector_search(
+            course_id=course_id,
+            query_embedding=query_embedding,
+            limit=limit
+        )
+        
+        return results
 ```
 
-### 6. Background Task Queue
+### 4. Background Task Queue
 
 ```python
 from fastapi import BackgroundTasks
@@ -252,7 +286,7 @@ async def queue_material_processing(
     )
 ```
 
-### 7. Updated Materials Router
+### 5. Updated Materials Router
 
 ```python
 @router.post("/courses/{course_id}/materials")
@@ -283,7 +317,7 @@ async def search_materials(
     pass
 ```
 
-### 8. Enhanced Chat Router
+### 6. Enhanced Chat Router
 
 ```python
 @router.post("/chat")
@@ -389,8 +423,8 @@ class MaterialSearchRequest(BaseModel):
   Thoughts: This is about embedding generation for all extracted text. We can verify embeddings are created.
   Testable: yes - property
 
-3.2 WHEN an embedding is generated THEN the System SHALL store it as a VECTOR(384) in the materials table
-  Thoughts: This is about correct data type and storage. We can verify the embedding column contains 384-dimensional vectors.
+3.2 WHEN an embedding is generated THEN the System SHALL store it as a VECTOR(1024) in the materials table
+  Thoughts: This is about correct data type and storage. We can verify the embedding column contains 1024-dimensional vectors (mxbai-embed-large).
   Testable: yes - property
 
 3.3 WHEN embedding generation succeeds THEN the System SHALL ensure the embedding is indexed for fast similarity search
@@ -509,8 +543,8 @@ class MaterialSearchRequest(BaseModel):
   Thoughts: This is about schema definition, verified by migration scripts.
   Testable: no
 
-9.2 WHEN embeddings are stored THEN the System SHALL use the VECTOR(384) data type for efficient storage
-  Thoughts: This is about data type correctness. We can verify stored embeddings have 384 dimensions.
+9.2 WHEN embeddings are stored THEN the System SHALL use the VECTOR(1024) data type for efficient storage
+  Thoughts: This is about data type correctness. We can verify stored embeddings have 1024 dimensions.
   Testable: yes - property
 
 9.3 WHEN the materials table is indexed THEN the System SHALL create an HNSW index on the embedding column for fast similarity search
@@ -545,7 +579,7 @@ Property 2: Background processing is triggered
 **Validates: Requirements 1.2, 1.3**
 
 Property 3: Successful processing stores data and updates status
-*For any* material that processes successfully, the database should contain extracted text, a 384-dimensional embedding, status 'completed', and a processed_at timestamp
+*For any* material that processes successfully, the database should contain extracted text, a 1024-dimensional embedding, status 'completed', and a processed_at timestamp
 **Validates: Requirements 1.4, 1.5, 2.3, 3.2**
 
 Property 4: OCR extracts text from files
@@ -597,7 +631,7 @@ Property 15: Processing timeout marks as failed
 **Validates: Requirements 8.4**
 
 Property 16: Embeddings have correct dimensionality
-*For any* stored embedding, it should have exactly 384 dimensions
+*For any* stored embedding, it should have exactly 1024 dimensions (mxbai-embed-large)
 **Validates: Requirements 9.2**
 
 ## Error Handling
@@ -627,7 +661,7 @@ Property 16: Embeddings have correct dimensionality
 
 ### Unit Tests
 
-1. **Provider Interface Tests**: Verify Gemini provider implements all interface methods
+1. **AI Brain Client Tests**: Verify client correctly formats requests and handles responses
 2. **Schema Validation Tests**: Verify MaterialResponse includes all new fields
 3. **Status Transition Tests**: Verify correct status transitions (pending → processing → completed/failed)
 4. **Error Handling Tests**: Verify errors are caught and logged appropriately
@@ -650,98 +684,90 @@ Property tests will be tagged with comments referencing the design document:
 3. **Embedding Integration Test**: Process material → verify embedding is generated and stored
 4. **Search Integration Test**: Upload materials → search → verify relevant results returned
 5. **RAG Integration Test**: Upload materials → chat with course context → verify materials retrieved
-
-### Phase 2 Testing (Future)
-
-1. **Router Integration Tests**: Verify router correctly routes to specialized models
-2. **Model Switching Tests**: Verify switching providers doesn't break functionality
-3. **Colab Connectivity Tests**: Verify connection to Google Colab endpoints
-4. **Multi-Model Tests**: Verify DeepSeek OCR, Llama chat, Qwen code queries work correctly
+6. **AI Brain Service Tests**: Verify connection handling, timeout behavior, and error responses
 
 ## Configuration
 
 ### Environment Variables
 
 ```bash
-# Phase 1: Gemini
-AI_PROVIDER=gemini
-GEMINI_API_KEY=your_gemini_key
-GEMINI_MODEL=gemini-1.5-flash
-GEMINI_EMBEDDING_MODEL=models/embedding-001
-
-# Phase 2: Router (Future)
-AI_PROVIDER=router
-ROUTER_ENDPOINT=https://your-colab-endpoint.com
-ROUTER_API_KEY=your_router_key
+# AI Brain Service Configuration
+AI_BRAIN_ENDPOINT=http://localhost:8001
+AI_BRAIN_TIMEOUT=300  # 5 minutes for OCR processing
 
 # Processing Configuration
 MATERIAL_PROCESSING_TIMEOUT=300  # 5 minutes
-MAX_EMBEDDING_DIMENSION=384
 SEARCH_RESULT_LIMIT=3
+
+# Supabase Configuration (existing)
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
 ```
 
-### Provider Selection
+### Service Initialization
 
 ```python
-def get_ai_provider() -> AIProvider:
-    """Factory function to get configured AI provider"""
-    provider_type = config.AI_PROVIDER
-    
-    if provider_type == "gemini":
-        return GeminiProvider(api_key=config.GEMINI_API_KEY)
-    elif provider_type == "router":
-        return RouterProvider(
-            router_endpoint=config.ROUTER_ENDPOINT,
-            api_key=config.ROUTER_API_KEY
+from config import settings
+
+# Initialize AI Brain client
+ai_brain_client = AIBrainClient(
+    brain_endpoint=settings.AI_BRAIN_ENDPOINT
+)
+
+# Initialize processing service
+processing_service = MaterialProcessingService(
+    ai_brain_client=ai_brain_client,
+    supabase_client=supabase
+)
+
+# Health check on startup
+@app.on_event("startup")
+async def startup_event():
+    """Verify AI Brain service is available"""
+    is_healthy = await ai_brain_client.health_check()
+    if not is_healthy:
+        logger.warning(
+            f"AI Brain service not available at {settings.AI_BRAIN_ENDPOINT}. "
+            "Material processing will fail until service is started."
         )
     else:
-        raise ValueError(f"Unknown provider: {provider_type}")
+        logger.info("AI Brain service connection verified")
 ```
 
-## Phase 2 Implementation Notes (Future)
+## AI Brain Service Integration
 
-### Router Architecture Details
+### Model Details
 
-The router service will run in Google Colab and handle:
+The AI Brain service (running on port 8001) provides:
 
-1. **Request Classification**: Determine which model to use based on request type
-2. **Model Loading**: Load models from Google Drive on-demand
-3. **Request Routing**: Forward requests to appropriate model
-4. **Response Aggregation**: Collect and format responses
+1. **OCR Processing**: qwen3-vl:2b model via `/router` endpoint
+   - Supports images (JPG, PNG, GIF, WEBP)
+   - Supports multi-page PDFs
+   - Automatic page-by-page processing for PDFs
+   - Returns extracted text
 
-### Model Specifications
+2. **Embedding Generation**: mxbai-embed-large model via `/utility/embed` endpoint
+   - Generates semantic vector embeddings
+   - Dimension: 1024 (mxbai-embed-large default)
+   - Optimized for semantic search
 
-- **DeepSeek OCR**: Specialized for document and image text extraction
-- **Llama 3.2**: General-purpose chat and question answering
-- **Qwen Coder 2.5**: Code generation, debugging, and technical queries
+3. **Resource Management**: 
+   - Specialist models (OCR, embedding) load on-demand
+   - Automatic unloading after use to free VRAM
+   - Core text generation model (Qwen 2.5) stays persistent
 
-### Router Endpoint Design
+### Service Dependencies
 
-```
-POST /router/process
-{
-  "task_type": "ocr" | "chat" | "code",
-  "data": {...},
-  "context": {...}
-}
+The backend requires the AI Brain service to be running:
 
-Response:
-{
-  "model_used": "deepseek" | "llama" | "qwen",
-  "result": {...},
-  "processing_time": 1.23
-}
+```bash
+# Start AI Brain service (in separate terminal)
+cd ai-brain
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+python brain.py
 ```
 
-### Migration Path
-
-1. Implement and test with Gemini (Phase 1)
-2. Deploy router service in Google Colab
-3. Implement RouterProvider class
-4. Update configuration to use router
-5. Test thoroughly with both providers
-6. Switch production to router
-7. Monitor performance and adjust as needed
+The AI Brain service must be started before the main backend for material processing to work.
 
 ## Performance Considerations
 

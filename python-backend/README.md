@@ -81,16 +81,25 @@ Once running, visit:
 
 ## Environment Variables
 
-See `.env.example` for all available configuration options:
+See `.env.example` for all available configuration options. For comprehensive configuration documentation, see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md).
 
-- `GEMINI_API_KEY` - Your Google Gemini API key (required)
+### Required Variables
+
+- `SUPABASE_URL` - Your Supabase project URL (required)
+- `SUPABASE_ANON_KEY` - Supabase anonymous key (required)
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (required)
+- `SUPABASE_DB_PASSWORD` - Database password for migrations (required)
+
+### Optional Variables
+
 - `RATE_LIMIT_REQUESTS` - Number of requests allowed per time window (default: 15)
 - `RATE_LIMIT_WINDOW` - Time window in seconds (default: 60)
 - `ALLOWED_ORIGINS` - CORS allowed origins (default: http://localhost:8080)
-- `GEMINI_MODEL` - Gemini model to use (default: gemini-1.5-flash)
-- `GEMINI_TEMPERATURE` - Response randomness (default: 0.7)
-- `GEMINI_MAX_OUTPUT_TOKENS` - Max response length (default: 1024)
-- `GEMINI_TIMEOUT` - API timeout in seconds (default: 30)
+- `AI_BRAIN_ENDPOINT` - AI Brain service URL (default: http://localhost:8001)
+- `AI_BRAIN_TIMEOUT` - AI Brain request timeout in seconds (default: 300.0)
+- `MAX_RETRY_ATTEMPTS` - Maximum retry attempts for transient failures (default: 3)
+- `RETRY_DELAY_SECONDS` - Initial retry delay in seconds (default: 2.0)
+- `RETRY_BACKOFF_MULTIPLIER` - Exponential backoff multiplier (default: 2.0)
 
 ## Database Migrations
 
@@ -181,20 +190,84 @@ Run property-based tests:
 pytest -v
 ```
 
+## AI Brain Service
+
+The backend integrates with a local AI Brain service for material processing (OCR and embedding generation). The AI Brain service must be running for material processing features to work.
+
+### Starting the AI Brain Service
+
+```bash
+# In a separate terminal
+cd ai-brain
+source venv/bin/activate  # Windows: venv\Scripts\activate
+python brain.py
+```
+
+The AI Brain service will start on port 8001 by default.
+
+### Verifying AI Brain Service
+
+```bash
+# Check if service is running
+curl http://localhost:8001/
+
+# Should return:
+# {"message": "AI Brain Service is running"}
+```
+
+### AI Brain Configuration
+
+Configure the AI Brain service endpoint in your `.env` file:
+
+```bash
+# Default configuration
+AI_BRAIN_ENDPOINT=http://localhost:8001
+AI_BRAIN_TIMEOUT=300.0  # 5 minutes for OCR processing
+```
+
+For detailed configuration options, see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md).
+
+### What the AI Brain Service Does
+
+- **OCR (Text Extraction)**: Extracts text from PDFs and images using the qwen3-vl:2b model
+- **Embedding Generation**: Creates semantic vector embeddings using the mxbai-embed-large model
+- **Model Management**: Automatically loads and unloads models to optimize VRAM usage
+
+### Troubleshooting AI Brain Service
+
+**Service Not Starting**:
+- Ensure Ollama is installed and running
+- Check that required models are downloaded: `ollama list`
+- Verify port 8001 is not in use
+
+**Material Processing Failures**:
+- Check AI Brain service is running: `curl http://localhost:8001/`
+- Review backend logs for connection errors
+- Increase timeout for large files: `AI_BRAIN_TIMEOUT=600.0`
+
+For more troubleshooting help, see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md#troubleshooting).
+
 ## Running Both Servers Locally
 
-The StudyMate application requires both the Express server (frontend + existing API) and the FastAPI backend (AI chat) to run simultaneously.
+The StudyMate application requires the Express server (frontend + existing API), the FastAPI backend (AI chat), and the AI Brain service (material processing) to run simultaneously.
 
 ### Option 1: Run in Separate Terminals (Recommended for Development)
 
-**Terminal 1 - FastAPI Backend:**
+**Terminal 1 - AI Brain Service:**
+```bash
+cd ai-brain
+source venv/bin/activate  # Windows: venv\Scripts\activate
+python brain.py
+```
+
+**Terminal 2 - FastAPI Backend:**
 ```bash
 cd python-backend
 source venv/bin/activate  # Windows: venv\Scripts\activate
 uvicorn main:app --reload --port 8000
 ```
 
-**Terminal 2 - Express + React Frontend:**
+**Terminal 3 - Express + React Frontend:**
 ```bash
 # From project root
 pnpm dev
@@ -214,11 +287,12 @@ You can use tools like `concurrently` or `pm2` to run both servers with a single
 }
 ```
 
-### Verifying Both Servers Are Running
+### Verifying All Services Are Running
 
-1. **FastAPI Backend**: Visit `http://localhost:8000/health` - should return `{"status": "healthy"}`
-2. **Express Server**: Visit `http://localhost:8080` - should load the React application
-3. **API Docs**: Visit `http://localhost:8000/docs` - should show Swagger UI
+1. **AI Brain Service**: Visit `http://localhost:8001/` - should return `{"message": "AI Brain Service is running"}`
+2. **FastAPI Backend**: Visit `http://localhost:8000/health` - should return `{"status": "healthy"}`
+3. **Express Server**: Visit `http://localhost:8080` - should load the React application
+4. **API Docs**: Visit `http://localhost:8000/docs` - should show Swagger UI
 
 ## Authentication
 

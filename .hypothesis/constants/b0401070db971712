@@ -1,0 +1,4 @@
+# file: D:\Python Based Project\StudyMate\python-backend\services\__init__.py
+# hypothesis_version: 6.148.6
+
+['AIBrainClient', 'AIBrainClientError']

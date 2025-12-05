@@ -1,0 +1,4 @@
+# file: D:\Python Based Project\StudyMate\python-backend\models\schemas.py
+# hypothesis_version: 6.148.6
+
+[100, 255, 500, 1024, 2000, 'Course name', 'File name', 'File size in bytes', 'JWT access token', 'List of subjects', 'MIME type', 'Material UUID', 'Material filename', 'Refresh token', 'Response message', 'Search query', 'Session information', 'Token type', 'User information', "User's email address", "User's password", 'bearer', 'data', 'grade', 'learning_pace', 'model', 'pending', 'prior_experience', 'semester_type', 'subject', 'user']

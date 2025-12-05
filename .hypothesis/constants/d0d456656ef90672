@@ -1,0 +1,4 @@
+# file: D:\Python Based Project\StudyMate\python-backend\middleware\rate_limiter.py
+# hypothesis_version: 6.148.6
+
+[429, '0', 'RATE_LIMIT_EXCEEDED', 'Retry-After', 'X-RateLimit-Limit', 'code', 'error']

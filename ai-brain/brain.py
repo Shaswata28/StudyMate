@@ -42,7 +42,7 @@ app.add_middleware(
 
 # Model configuration
 CORE_MODEL = "qwen2.5:1.5b"
-VISION_MODEL = "deepseek-ocr"
+VISION_MODEL = "qwen2.5vl:3b"
 EMBEDDING_MODEL = "mxbai-embed-large"
 
 # Whisper model (loaded in RAM)

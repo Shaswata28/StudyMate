@@ -20,6 +20,7 @@ from services.local_ai_service import (
 )
 from services.auth_service import get_current_user, get_current_user_optional, AuthUser
 from services.supabase_client import get_user_client
+from services.service_manager import service_manager
 from middleware.rate_limiter import limiter
 from config import config
 
@@ -31,34 +32,86 @@ router = APIRouter(prefix="/api", tags=["chat"])
 
 @router.post("/chat", response_model=ChatResponse)
 @limiter.limit(f"{config.RATE_LIMIT_REQUESTS}/{config.RATE_LIMIT_WINDOW}seconds")
-async def chat_endpoint(request: Request, chat_request: ChatRequest):
+async def chat_endpoint(
+    request: Request, 
+    chat_request: ChatRequest,
+    course_id: Optional[str] = None
+):
     """
-    Handle chat requests from the frontend.
+    Handle chat requests from the frontend with optional RAG support.
     
-    Validates the request, calls the Local AI brain service with message and history,
+    Validates the request, optionally performs semantic search on course materials,
+    calls the Local AI brain service with message, history, and material context,
     and returns the AI response with a timestamp.
     
     Args:
         request: FastAPI request object (needed for rate limiting)
         chat_request: Validated ChatRequest containing message and optional history
+        course_id: Optional course ID for RAG (Retrieval Augmented Generation)
         
     Returns:
         ChatResponse with AI response and timestamp
         
     Raises:
         HTTPException: For various error conditions (400, 500, 503)
+        
+    Requirements: 5.1, 5.2, 5.3, 5.5
     """
     try:
         # Log incoming request
         logger.info(
             f"Chat request received - Message length: {len(chat_request.message)}, "
             f"History length: {len(chat_request.history)}, "
-            f"Attachments: {len(chat_request.attachments)}"
+            f"Attachments: {len(chat_request.attachments)}, "
+            f"Course ID: {course_id}"
         )
+        
+        # Prepare the message for AI
+        message = chat_request.message
+        
+        # If course_id is provided, perform semantic search and augment the prompt
+        if course_id:
+            try:
+                # Perform semantic search on course materials
+                logger.info(f"Performing semantic search for course: {course_id}")
+                search_results = await service_manager.processing_service.search_materials(
+                    course_id=course_id,
+                    query=chat_request.message,
+                    limit=3
+                )
+                
+                # If relevant materials are found, include them in the prompt
+                if search_results:
+                    logger.info(f"Found {len(search_results)} relevant materials for RAG")
+                    
+                    # Build material context
+                    material_context = "\n\n--- RELEVANT COURSE MATERIALS ---\n"
+                    for idx, result in enumerate(search_results, 1):
+                        material_context += f"\n[Material {idx}: {result['name']}]\n"
+                        material_context += f"{result['excerpt']}\n"
+                        material_context += f"(Relevance: {result['similarity_score']:.2f})\n"
+                    
+                    material_context += "\n--- END OF COURSE MATERIALS ---\n\n"
+                    
+                    # Augment the message with material context
+                    message = (
+                        f"{material_context}"
+                        f"Based on the course materials above, please answer the following question:\n\n"
+                        f"{chat_request.message}"
+                    )
+                    
+                    logger.info("Message augmented with material context")
+                else:
+                    logger.info("No relevant materials found, proceeding without RAG")
+                    
+            except Exception as e:
+                # Log the error but don't fail the chat request
+                # Proceed without RAG if material search fails
+                logger.warning(f"Material search failed, proceeding without RAG: {str(e)}")
         
         # Call Local AI service with attachments
         response_text = await local_ai_service.generate_response(
-            message=chat_request.message,
+            message=message,
             history=chat_request.history if chat_request.history else None,
             attachments=chat_request.attachments if chat_request.attachments else None
         )
@@ -173,12 +226,14 @@ async def save_chat_message(
     user: AuthUser = Depends(get_current_user)
 ):
     """
-    Save chat message to Supabase and get AI response.
+    Save chat message to Supabase and get AI response with RAG support.
     
-    This endpoint combines the chat functionality with persistence:
+    This endpoint combines the chat functionality with persistence and RAG:
     1. Verifies course ownership
-    2. Sends message to Local AI brain service
-    3. Saves both user message and AI response to chat_history table
+    2. Performs semantic search on course materials
+    3. Augments prompt with relevant material context
+    4. Sends message to Local AI brain service
+    5. Saves both user message and AI response to chat_history table
     
     The chat history is stored as a JSONB array of message objects.
     
@@ -191,7 +246,7 @@ async def save_chat_message(
     Returns:
         ChatResponse with AI response and timestamp
         
-    Requirements: 7.1, 7.2, 7.4
+    Requirements: 5.1, 5.2, 5.3, 5.5, 7.1, 7.2, 7.4
     """
     try:
         client = get_user_client(user.access_token)
@@ -211,9 +266,50 @@ async def save_chat_message(
             f"Attachments: {len(chat_request.attachments)}"
         )
         
+        # Prepare the message for AI
+        message = chat_request.message
+        
+        # Perform semantic search on course materials for RAG
+        try:
+            logger.info(f"Performing semantic search for course: {course_id}")
+            search_results = await service_manager.processing_service.search_materials(
+                course_id=course_id,
+                query=chat_request.message,
+                limit=3
+            )
+            
+            # If relevant materials are found, include them in the prompt
+            if search_results:
+                logger.info(f"Found {len(search_results)} relevant materials for RAG")
+                
+                # Build material context
+                material_context = "\n\n--- RELEVANT COURSE MATERIALS ---\n"
+                for idx, result in enumerate(search_results, 1):
+                    material_context += f"\n[Material {idx}: {result['name']}]\n"
+                    material_context += f"{result['excerpt']}\n"
+                    material_context += f"(Relevance: {result['similarity_score']:.2f})\n"
+                
+                material_context += "\n--- END OF COURSE MATERIALS ---\n\n"
+                
+                # Augment the message with material context
+                message = (
+                    f"{material_context}"
+                    f"Based on the course materials above, please answer the following question:\n\n"
+                    f"{chat_request.message}"
+                )
+                
+                logger.info("Message augmented with material context")
+            else:
+                logger.info("No relevant materials found, proceeding without RAG")
+                
+        except Exception as e:
+            # Log the error but don't fail the chat request
+            # Proceed without RAG if material search fails
+            logger.warning(f"Material search failed, proceeding without RAG: {str(e)}")
+        
         # Call Local AI service with attachments
         response_text = await local_ai_service.generate_response(
-            message=chat_request.message,
+            message=message,
             history=chat_request.history if chat_request.history else None,
             attachments=chat_request.attachments if chat_request.attachments else None
         )

@@ -4,7 +4,7 @@
 
 This feature enables automatic OCR (Optical Character Recognition) and vector embedding generation for uploaded learning materials (PDFs, images). When users upload materials to a course, the system will automatically extract text content, generate semantic embeddings, and store them for intelligent retrieval during AI conversations. This enables Retrieval Augmented Generation (RAG) where the AI can automatically reference relevant material content when answering questions.
 
-The system is designed with a two-phase architecture: Phase 1 uses Google Gemini API for rapid development and testing, while Phase 2 will transition to a router-based multi-model architecture with specialized models (DeepSeek for OCR, Llama 3.2 for chat, Qwen Coder 2.5 for code queries) running in Google Colab with models stored in Google Drive.
+The system uses a local AI Brain service that orchestrates specialized models running via Ollama: qwen3-vl:2b for text extraction, mxbai-embed-large for embeddings, and Qwen 2.5 for text generation. This architecture eliminates external API dependencies and provides full control over the AI processing pipeline.
 
 ## Glossary
 
@@ -15,8 +15,10 @@ The system is designed with a two-phase architecture: Phase 1 uses Google Gemini
 - **RAG**: Retrieval Augmented Generation - using retrieved context to enhance AI responses
 - **Semantic Search**: Finding materials based on meaning rather than exact keyword matches
 - **Processing Pipeline**: The automated workflow that processes uploaded materials
-- **Gemini API**: Google's AI API used for OCR and embedding generation (Phase 1)
-- **Router Architecture**: Multi-model system with specialized models for different tasks (Phase 2)
+- **AI Brain Service**: Local FastAPI service that orchestrates specialized AI models via Ollama
+- **qwen3-vl:2b**: Vision-language model for extracting text from images and PDFs
+- **mxbai-embed-large**: Embedding model for generating semantic vector representations
+- **Ollama**: Local model runtime for running AI models
 - **Background Job**: Asynchronous task that runs independently of the main request
 - **Supabase Storage**: Cloud storage service for storing uploaded files
 - **pgvector**: PostgreSQL extension for storing and querying vector embeddings
@@ -54,7 +56,7 @@ The system is designed with a two-phase architecture: Phase 1 uses Google Gemini
 #### Acceptance Criteria
 
 1. WHEN text is extracted from a material THEN the System SHALL generate a vector embedding representing the semantic meaning
-2. WHEN an embedding is generated THEN the System SHALL store it as a VECTOR(384) in the materials table
+2. WHEN an embedding is generated THEN the System SHALL store it as a VECTOR(1024) in the materials table
 3. WHEN embedding generation succeeds THEN the System SHALL ensure the embedding is indexed for fast similarity search
 4. WHEN embedding generation fails THEN the System SHALL update the material status to 'failed' and log the error
 5. WHEN a material has no text content THEN the System SHALL skip embedding generation and mark status as 'completed'
@@ -97,15 +99,15 @@ The system is designed with a two-phase architecture: Phase 1 uses Google Gemini
 
 ### Requirement 7
 
-**User Story:** As a developer, I want the system designed with abstraction for multiple AI providers, so that we can transition from Gemini to a router architecture without major refactoring.
+**User Story:** As a developer, I want the system to communicate with the local AI Brain service, so that OCR and embedding operations use local models without external API dependencies.
 
 #### Acceptance Criteria
 
-1. WHEN implementing OCR services THEN the System SHALL use an abstract interface that supports multiple providers
-2. WHEN implementing embedding services THEN the System SHALL use an abstract interface that supports multiple providers
-3. WHEN switching AI providers THEN the System SHALL require only configuration changes and provider implementation
-4. WHEN using Gemini API THEN the System SHALL implement the provider interface for Gemini services
-5. WHERE router architecture is deployed THEN the System SHALL support provider implementation for router endpoints
+1. WHEN implementing OCR services THEN the System SHALL send requests to the AI Brain service /router endpoint
+2. WHEN implementing embedding services THEN the System SHALL send requests to the AI Brain service /utility/embed endpoint
+3. WHEN the AI Brain service is unavailable THEN the System SHALL update material status to 'failed' with appropriate error message
+4. WHEN processing materials THEN the System SHALL verify the AI Brain service is running before initiating processing
+5. WHEN the AI Brain service returns an error THEN the System SHALL log the error and mark the material as 'failed'
 
 ### Requirement 8
 
@@ -126,19 +128,19 @@ The system is designed with a two-phase architecture: Phase 1 uses Google Gemini
 #### Acceptance Criteria
 
 1. WHEN the materials table is created THEN the System SHALL include columns for extracted_text, embedding, processing_status, and processed_at
-2. WHEN embeddings are stored THEN the System SHALL use the VECTOR(384) data type for efficient storage
+2. WHEN embeddings are stored THEN the System SHALL use the VECTOR(1024) data type for efficient storage
 3. WHEN the materials table is indexed THEN the System SHALL create an HNSW index on the embedding column for fast similarity search
 4. WHEN querying by status THEN the System SHALL have an index on processing_status for efficient filtering
 5. WHEN querying by course THEN the System SHALL maintain the existing index on course_id for efficient lookups
 
-### Requirement 10 (Phase 2 - Future)
+### Requirement 10
 
-**User Story:** As a system architect, I want to deploy a router-based multi-model architecture, so that specialized models handle specific tasks efficiently.
+**User Story:** As a system administrator, I want the AI Brain service to manage model lifecycle efficiently, so that system resources are optimized during material processing.
 
 #### Acceptance Criteria
 
-1. WHERE router architecture is deployed THEN the System SHALL route OCR requests to DeepSeek model
-2. WHERE router architecture is deployed THEN the System SHALL route general chat requests to Llama 3.2 model
-3. WHERE router architecture is deployed THEN the System SHALL route code-related requests to Qwen Coder 2.5 model
-4. WHERE router architecture is deployed THEN the System SHALL host models in Google Colab with model files stored in Google Drive
-5. WHERE router architecture is deployed THEN the System SHALL use a router service as middleware to determine appropriate model selection
+1. WHEN the AI Brain service processes OCR requests THEN the System SHALL use qwen3-vl:2b model loaded on demand
+2. WHEN the AI Brain service generates embeddings THEN the System SHALL use mxbai-embed-large model loaded on demand
+3. WHEN specialist models complete processing THEN the AI Brain service SHALL unload them to free VRAM
+4. WHEN the backend starts THEN the System SHALL verify the AI Brain service is accessible at the configured endpoint
+5. WHEN material processing requires AI operations THEN the System SHALL handle AI Brain service connection errors gracefully

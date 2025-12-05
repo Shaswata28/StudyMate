@@ -1,0 +1,4 @@
+# file: D:\Python Based Project\StudyMate\python-backend\main.py
+# hypothesis_version: 6.148.6
+
+[8000, '*', '/api/test-rate-limit', '/health', '0.0.0.0', '1.0.0', '=', 'Shutdown complete', '__main__', 'healthy', 'limit', 'message', 'service', 'shutdown', 'startup', 'status', 'studymate-ai-chat']

@@ -179,6 +179,10 @@ class MaterialResponse(BaseModel):
     file_path: str
     file_type: str
     file_size: int
+    processing_status: str = "pending"  # pending, processing, completed, failed
+    processed_at: Optional[str] = None
+    error_message: Optional[str] = None
+    has_embedding: bool = False  # Computed: embedding IS NOT NULL
     created_at: str
     updated_at: str
 
@@ -232,3 +236,22 @@ class MessageResponse(BaseModel):
     Generic message response.
     """
     message: str = Field(..., description="Response message")
+
+
+class MaterialSearchResult(BaseModel):
+    """
+    Schema for semantic search result.
+    """
+    material_id: str = Field(..., description="Material UUID")
+    name: str = Field(..., description="Material filename")
+    excerpt: str = Field(..., description="Relevant text excerpt")
+    similarity_score: float = Field(..., ge=0, le=1, description="Similarity score (0-1, higher is more relevant)")
+    file_type: str = Field(..., description="MIME type")
+
+
+class MaterialSearchRequest(BaseModel):
+    """
+    Schema for semantic search request.
+    """
+    query: str = Field(..., min_length=1, max_length=500, description="Search query")
+    limit: int = Field(default=3, ge=1, le=10, description="Maximum number of results")

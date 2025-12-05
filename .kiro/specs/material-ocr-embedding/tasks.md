@@ -11,54 +11,79 @@
   - Provide SQL script for manual execution in Supabase
   - _Requirements: 1.1, 9.1, 9.2, 9.3, 9.4_
 
-- [ ] 2. Create AI provider abstraction layer
-  - Define abstract AIProvider interface with extract_text, generate_embedding, and chat_with_context methods
-  - Create provider factory function for selecting provider based on configuration
-  - Add configuration variables for AI_PROVIDER, provider endpoints, and API keys
-  - _Requirements: 7.1, 7.2, 7.3_
+- [x] 2. Create AI Brain client
 
-- [ ] 3. Implement Gemini provider (Phase 1)
-  - Create GeminiProvider class implementing AIProvider interface
-  - Implement extract_text method using Gemini vision/PDF capabilities
-  - Implement generate_embedding method using Gemini embedding API
-  - Implement chat_with_context method for RAG-enabled chat
-  - Add error handling for Gemini API failures
-  - _Requirements: 2.1, 2.2, 3.1, 5.4, 7.4_
 
-- [ ]* 3.1 Write property test for Gemini OCR
+
+
+
+  - Create AIBrainClient class with methods for extract_text, generate_embedding, and health_check
+  - Implement HTTP communication with AI Brain service endpoints (/router and /utility/embed)
+  - Add timeout configuration (default 5 minutes for OCR processing)
+  - Add error handling for connection failures and service unavailability
+  - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
+
+- [x] 2.1 Write property test for AI Brain OCR
+
+
+
+
+
+
+
   - **Property 4: OCR extracts text from files**
   - **Validates: Requirements 2.1, 2.2**
 
-- [ ]* 3.2 Write property test for embedding generation
+- [x] 2.2 Write property test for embedding generation
+
+
+
+
+
+
+
   - **Property 6: Embedding generation for extracted text**
   - **Validates: Requirements 3.1**
 
-- [ ] 4. Create material processing service
+- [x] 3. Create material processing service
+
+
+
+
+
+
+
+
   - Create MaterialProcessingService class with process_material method
-  - Implement text extraction workflow using AI provider
-  - Implement embedding generation workflow using AI provider
+  - Implement text extraction workflow using AI Brain client
+  - Implement embedding generation workflow using AI Brain client
   - Add status tracking (pending → processing → completed/failed)
   - Implement error handling and logging for processing failures
   - Add timeout handling for long-running operations
   - _Requirements: 1.2, 1.3, 1.4, 1.5, 2.3, 2.4, 3.2, 3.4, 8.1, 8.2, 8.3, 8.4_
 
-- [ ]* 4.1 Write property test for processing status transitions
+- [ ]* 3.1 Write property test for processing status transitions
   - **Property 2: Background processing is triggered**
   - **Validates: Requirements 1.2, 1.3**
 
-- [ ]* 4.2 Write property test for successful processing
+- [ ]* 3.2 Write property test for successful processing
   - **Property 3: Successful processing stores data and updates status**
   - **Validates: Requirements 1.4, 1.5, 2.3, 3.2**
 
-- [ ]* 4.3 Write property test for failed processing
+- [ ]* 3.3 Write property test for failed processing
   - **Property 5: Failed processing updates status with error**
   - **Validates: Requirements 2.4, 3.4, 8.3**
 
-- [ ]* 4.4 Write property test for embedding dimensionality
+- [ ]* 3.4 Write property test for embedding dimensionality (1024 dimensions)
   - **Property 16: Embeddings have correct dimensionality**
   - **Validates: Requirements 9.2**
 
-- [ ] 5. Implement background task queue
+- [x] 4. Implement background task queue
+
+
+
+
+
   - Set up FastAPI BackgroundTasks for async processing
   - Create queue_material_processing function
   - Ensure upload endpoint returns immediately without blocking
@@ -68,17 +93,24 @@
   - **Property 13: Async processing doesn't block upload**
   - **Validates: Requirements 8.1**
 
-- [ ] 6. Update materials upload endpoint
+- [x] 5. Update materials upload endpoint
+
+
+
+
   - Modify upload_material endpoint to set initial status as 'pending'
   - Queue background processing task after file upload
   - Return material metadata immediately with pending status
   - _Requirements: 1.1, 1.2_
 
-- [ ]* 6.1 Write property test for upload workflow
+- [ ]* 5.1 Write property test for upload workflow
   - **Property 1: Upload creates storage and database record**
   - **Validates: Requirements 1.1**
 
-- [ ] 7. Update material response schemas
+- [x] 6. Update material response schemas
+
+
+
   - Add processing_status, processed_at, error_message, has_embedding to MaterialResponse
   - Create MaterialSearchResult schema with material_id, name, excerpt, similarity_score, file_type
   - Create MaterialSearchRequest schema with query and limit fields
@@ -88,34 +120,48 @@
   - **Property 12: Status displayed in material details**
   - **Validates: Requirements 6.1**
 
-- [ ] 8. Implement semantic search functionality
+- [x] 7. Implement semantic search functionality
+
+
+
+
   - Add search_materials method to MaterialProcessingService
-  - Implement query embedding generation
+  - Implement query embedding generation using AI Brain client
   - Implement vector similarity search using pgvector
   - Return results ranked by similarity score
   - Handle edge cases (empty course, no results)
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ]* 8.1 Write property test for search query embedding
+- [ ]* 7.1 Write property test for search query embedding
   - **Property 7: Search query generates embedding**
   - **Validates: Requirements 4.1, 4.2**
 
-- [ ]* 8.2 Write property test for search result ranking
+- [ ]* 7.2 Write property test for search result ranking
   - **Property 8: Search results are ranked by relevance**
   - **Validates: Requirements 4.3**
 
-- [ ]* 8.3 Write property test for search result completeness
+- [ ]* 7.3 Write property test for search result completeness
   - **Property 9: Search results include metadata and scores**
   - **Validates: Requirements 4.4**
 
-- [ ] 9. Create semantic search API endpoint
+- [x] 8. Create semantic search API endpoint
+
+
+
+
+
   - Add GET /courses/{course_id}/materials/search endpoint
   - Validate course ownership
   - Call search_materials service method
   - Return ranked search results
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-- [ ] 10. Integrate RAG into chat endpoint
+- [x] 9. Integrate RAG into chat endpoint
+
+
+
+
+
   - Modify chat endpoint to accept optional course_id parameter
   - Perform semantic search on course materials when course_id provided
   - Retrieve top 3 most relevant material excerpts
@@ -123,15 +169,20 @@
   - Handle cases with no relevant materials
   - _Requirements: 5.1, 5.2, 5.3, 5.5_
 
-- [ ]* 10.1 Write property test for RAG material retrieval
+- [ ]* 9.1 Write property test for RAG material retrieval
   - **Property 10: RAG retrieves top 3 materials**
   - **Validates: Requirements 5.2**
 
-- [ ]* 10.2 Write property test for context inclusion
+- [ ]* 9.2 Write property test for context inclusion
   - **Property 11: Material context included in AI prompt**
   - **Validates: Requirements 5.3**
 
-- [ ] 11. Add error handling and logging
+- [x] 10. Add error handling and logging
+
+
+
+
+
   - Implement comprehensive error handling for all processing steps
   - Add detailed logging for debugging (OCR failures, embedding failures, timeouts)
   - Ensure errors are captured in error_message field
@@ -146,29 +197,35 @@
   - **Property 15: Processing timeout marks as failed**
   - **Validates: Requirements 8.4**
 
-- [ ] 12. Update existing material endpoints
+- [x] 11. Update existing material endpoints
+
+
+
+
   - Update list_materials to include new status fields
   - Update get_material to include new status fields
   - Ensure backward compatibility with existing clients
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 13. Create Phase 2 router provider stub (documentation only)
-  - Create RouterProvider class skeleton with interface implementation
-  - Add detailed comments explaining router architecture
-  - Document endpoint structure for router service
-  - Add configuration examples for Phase 2 deployment
-  - Mark as future implementation (not functional yet)
-  - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
+- [x] 12. Add configuration and environment setup
 
-- [ ] 14. Add configuration and environment setup
-  - Add AI provider configuration to config.py
-  - Add environment variables for Gemini API keys
-  - Add environment variables for router endpoints (Phase 2)
+
+
+
+
+  - Add AI Brain service configuration to config.py
+  - Add environment variable for AI_BRAIN_ENDPOINT (default: http://localhost:8001)
   - Add processing timeout configuration
+  - Add startup health check for AI Brain service
   - Document all configuration options
-  - _Requirements: 7.3, 7.4, 7.5_
+  - _Requirements: 7.1, 7.2, 7.3, 7.4, 10.4_
 
-- [ ] 15. Create documentation
+- [x] 13. Create documentation
+
+
+
+
+
   - Document SQL migration steps for Supabase
   - Document API endpoints (upload, search, chat with RAG)
   - Document configuration options
@@ -176,5 +233,9 @@
   - Create examples for semantic search and RAG usage
   - _Requirements: All_
 
-- [ ] 16. Final checkpoint - Ensure all tests pass
+- [x] 16. Final checkpoint - Ensure all tests pass
+
+
+
+
   - Ensure all tests pass, ask the user if questions arise.

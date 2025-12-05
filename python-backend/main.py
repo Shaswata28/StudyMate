@@ -26,6 +26,9 @@ from middleware.logging_middleware import LoggingMiddleware
 # Import brain manager
 from services.brain_manager import brain_manager
 
+# Import service manager
+from services.service_manager import service_manager
+
 # Create FastAPI application
 app = FastAPI(
     title="StudyMate AI Chat API",
@@ -105,7 +108,17 @@ async def startup_event():
     logger.info("Configuration loaded successfully")
     logger.info(f"  - Rate Limiting: {config.RATE_LIMIT_REQUESTS} requests per {config.RATE_LIMIT_WINDOW}s")
     logger.info(f"  - CORS Allowed Origins: {', '.join(config.ALLOWED_ORIGINS)}")
+    logger.info(f"  - AI Brain Endpoint: {config.AI_BRAIN_ENDPOINT}")
     logger.info("=" * 60)
+    
+    # Initialize services (AI Brain client, Material Processing Service)
+    logger.info("Initializing services...")
+    try:
+        await service_manager.initialize()
+        logger.info("✓ Services initialized successfully")
+    except Exception as e:
+        logger.error(f"✗ Error initializing services: {str(e)}")
+        logger.warning("  Material processing features may not work correctly")
     
     # Start AI Brain Service
     logger.info("Starting AI Brain Service...")

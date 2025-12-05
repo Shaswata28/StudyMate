@@ -1,0 +1,4 @@
+# file: D:\Python Based Project\StudyMate\python-backend\routers\auth.py
+# hypothesis_version: 6.148.6
+
+[200, 201, 400, 401, 500, 3600, '/api/auth', '/login', '/logout', '/refresh', '/session', '/signup', 'Invalid credentials', 'Logout failed', 'Not authenticated', 'access_token', 'already exists', 'already registered', 'authentication', 'bearer', 'created_at', 'description', 'email', 'email_confirm', 'email_confirmed_at', 'id', 'invalid', 'last_sign_in_at', 'model', 'password', 'token_type']

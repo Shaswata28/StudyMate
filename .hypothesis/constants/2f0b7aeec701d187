@@ -1,0 +1,4 @@
+# file: D:\Python Based Project\StudyMate\python-backend\routers\materials.py
+# hypothesis_version: 6.148.6
+
+['*', '/api', 'Content-Disposition', 'Course not found', 'Material not found', 'content-type', 'course_id', 'courses', 'created_at', 'embedding', 'error_message', 'excerpt', 'file_path', 'file_size', 'file_type', 'id', 'material_id', 'materials', 'name', 'pending', 'processed_at', 'processing_status', 'similarity_score', 'updated_at', 'user_id']

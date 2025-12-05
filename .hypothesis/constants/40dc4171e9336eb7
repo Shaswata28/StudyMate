@@ -1,0 +1,4 @@
+# file: D:\Python Based Project\StudyMate\python-backend\config.py
+# hypothesis_version: 6.148.6
+
+[',', '15', '2.0', '3', '300.0', '60', 'AI_BRAIN_ENDPOINT', 'AI_BRAIN_TIMEOUT', 'ALLOWED_ORIGINS', 'MAX_RETRY_ATTEMPTS', 'RATE_LIMIT_REQUESTS', 'RATE_LIMIT_WINDOW', 'RETRY_DELAY_SECONDS', 'SUPABASE_ANON_KEY', 'SUPABASE_URL', 'https://']
