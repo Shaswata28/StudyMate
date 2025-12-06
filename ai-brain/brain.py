@@ -50,27 +50,20 @@ whisper_model = None
 
 
 def load_whisper_model():
-    """Load Whisper Large-v3 model into RAM at startup (DISABLED FOR NOW)"""
+    """Load Whisper Large-v3 model into RAM at startup"""
     global whisper_model
-    # COMMENTED OUT: Whisper loading disabled to allow instant startup
-    # Uncomment the code below when you want to enable audio transcription
     
-    # try:
-    #     import whisper
-    #     logger.info("Attempting to load Whisper Large-v3 model into RAM...")
-    #     logger.info("Note: This may take a few minutes on first run (downloading ~3GB)")
-    #     whisper_model = whisper.load_model("large-v3")
-    #     logger.info("✓ Whisper Large-v3 model loaded successfully - audio transcription enabled")
-    # except Exception as e:
-    #     logger.warning(f"⚠ Whisper model not loaded: {e}")
-    #     logger.warning("Audio transcription will be disabled")
-    #     logger.warning("The brain service will continue without audio support")
-    #     whisper_model = None
-    
-    # For now, just set to None
-    logger.info("Whisper loading is currently disabled for faster startup")
-    logger.info("Audio transcription features are not available")
-    whisper_model = None
+    try:
+        import whisper
+        logger.info("Attempting to load Whisper Large-v3 model into RAM...")
+        logger.info("Note: This may take a few minutes on first run (downloading ~3GB)")
+        whisper_model = whisper.load_model("large-v3")
+        logger.info("✓ Whisper Large-v3 model loaded successfully - audio transcription enabled")
+    except Exception as e:
+        logger.warning(f"⚠ Whisper model not loaded: {e}")
+        logger.warning("Audio transcription will be disabled")
+        logger.warning("The brain service will continue without audio support")
+        whisper_model = None
 
 
 def is_pdf(file: UploadFile) -> bool:

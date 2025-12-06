@@ -82,6 +82,10 @@ app.include_router(materials_router)
 from routers.chat import router as chat_router
 app.include_router(chat_router)
 
+# Register transcription router
+from routers.transcribe import router as transcribe_router
+app.include_router(transcribe_router)
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""

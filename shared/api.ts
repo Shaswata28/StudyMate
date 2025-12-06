@@ -10,3 +10,12 @@
 export interface DemoResponse {
   message: string;
 }
+
+/**
+ * Response type for /api/transcribe
+ */
+export interface TranscriptionResponse {
+  text: string;
+  success: boolean;
+  error?: string;
+}
