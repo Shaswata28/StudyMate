@@ -1,4 +1,0 @@
-# file: D:\Python Based Project\StudyMate\python-backend\routers\preferences.py
-# hypothesis_version: 6.148.6
-
-['*', '/api/preferences', 'id', 'personalized', 'preferences', 'prefs']

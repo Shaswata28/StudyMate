@@ -1,4 +1,0 @@
-# file: D:\Python Based Project\StudyMate\python-backend\constants.py
-# hypothesis_version: 6.148.6
-
-[384, 1024, '.doc', '.docx', '.gif', '.jpeg', '.jpg', '.md', '.pdf', '.png', '.ppt', '.pptx', '.txt', '.webp', 'BA', 'Bachelor', 'CS', 'EEE', 'Economics', 'English', 'Masters', 'advanced', 'application/msword', 'application/pdf', 'assistant', 'beginner', 'computer science', 'course-materials', 'double', 'economics', 'english', 'expert', 'fast', 'image/gif', 'image/jpeg', 'image/png', 'image/webp', 'intermediate', 'model', 'moderate', 'slow', 'text/markdown', 'text/plain', 'tri', 'user']

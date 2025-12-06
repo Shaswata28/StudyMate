@@ -1,4 +1,0 @@
-# file: D:\Python Based Project\StudyMate\python-backend\services\material_processing_service.py
-# hypothesis_version: 6.148.6
-
-[0.0, 1.0, 300.0, 500, '*', ',', '...', '[', ']', 'completed', 'course_id', 'embedding', 'error_message', 'excerpt', 'extracted_text', 'failed', 'file_path', 'file_type', 'id', 'match_limit', 'material_id', 'materials', 'name', 'processed_at', 'processing', 'processing_status', 'query_course_id', 'query_embedding', 'similarity', 'similarity_score', 'updated_at']

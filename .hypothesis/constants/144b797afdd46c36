@@ -1,4 +1,0 @@
-# file: D:\Python Based Project\StudyMate\python-backend\models\__init__.py
-# hypothesis_version: 6.148.6
-
-['AcademicBase', 'AcademicCreate', 'AcademicResponse', 'AcademicUpdate', 'ChatHistoryBase', 'ChatHistoryCreate', 'ChatHistoryResponse', 'ChatHistoryUpdate', 'ChatMessage', 'ChatRequest', 'ChatResponse', 'CourseBase', 'CourseCreate', 'CourseResponse', 'CourseUpdate', 'ErrorResponse', 'FileAttachment', 'MaterialBase', 'MaterialCreate', 'MaterialResponse', 'MaterialUpdate', 'Message', 'PersonalizedBase', 'PersonalizedCreate', 'PersonalizedResponse', 'PersonalizedUpdate']

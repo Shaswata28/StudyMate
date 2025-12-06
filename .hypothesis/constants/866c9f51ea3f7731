@@ -1,4 +1,0 @@
-# file: D:\Python Based Project\StudyMate\python-backend\routers\profile.py
-# hypothesis_version: 6.148.6
-
-['*', '/academic', '/api/profile', '/preferences', 'academic', 'grade', 'id', 'personalized', 'prefs', 'profile', 'semester', 'semester_type', 'subject']

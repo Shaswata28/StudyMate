@@ -1,4 +1,0 @@
-# file: D:\Python Based Project\StudyMate\python-backend\routers\courses.py
-# hypothesis_version: 6.148.6
-
-['*', '/api/courses', '/{course_id}', 'Course not found', 'courses', 'created_at', 'id', 'name', 'updated_at', 'user_id']

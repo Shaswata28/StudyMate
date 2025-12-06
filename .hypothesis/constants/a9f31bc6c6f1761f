@@ -1,4 +1,0 @@
-# file: D:\Python Based Project\StudyMate\python-backend\routers\chat.py
-# hypothesis_version: 6.148.6
-
-[500, 503, '*', '/api', '/chat', 'Course not found', 'INTERNAL_ERROR', 'LOCAL_AI_API_ERROR', 'SERVICE_ERROR', 'TIMEOUT_ERROR', 'Z', 'chat', 'chat_history', 'code', 'content', 'course_id', 'courses', 'created_at', 'error', 'history', 'id', 'model', 'role', 'user', 'user_id']

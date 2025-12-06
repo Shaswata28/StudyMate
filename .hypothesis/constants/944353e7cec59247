@@ -1,4 +1,0 @@
-# file: D:\Python Based Project\StudyMate\python-backend\routers\academic.py
-# hypothesis_version: 6.148.6
-
-['*', '/api/academic', 'academic', 'grade', 'id', 'semester', 'semester_type', 'subject']

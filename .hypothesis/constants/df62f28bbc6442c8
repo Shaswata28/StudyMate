@@ -1,4 +1,0 @@
-# file: D:\Python Based Project\StudyMate\python-backend\models\database.py
-# hypothesis_version: 6.148.6
-
-[255, 384, 'AcademicBase', 'AcademicCreate', 'AcademicResponse', 'AcademicUpdate', 'Array of subjects', 'Bachelor', 'ChatHistoryBase', 'ChatHistoryCreate', 'ChatHistoryResponse', 'ChatHistoryUpdate', 'ChatMessage', 'Course name', 'CourseBase', 'CourseCreate', 'CourseResponse', 'CourseUpdate', 'Masters', 'Material filename', 'MaterialBase', 'MaterialCreate', 'MaterialResponse', 'MaterialUpdate', 'Message content', 'Parent course ID', 'PersonalizedBase', 'PersonalizedCreate', 'PersonalizedResponse', 'PersonalizedUpdate', 'double', 'embedding', 'grade', 'model', 'role', 'semester_type', 'tri', 'user']
