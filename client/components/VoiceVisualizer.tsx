@@ -1,173 +1,184 @@
 import { useEffect, useRef } from "react";
+import { X, Check, RotateCcw } from "lucide-react";
 
 interface VoiceVisualizerProps {
   isRecording: boolean;
   audioAnalyzer: AnalyserNode | null;
-  recordingTime: number;
+  transcript: string;
+  onStop: () => void;
+  onCancel: () => void;
+  onRetry: () => void;
 }
 
 export default function VoiceVisualizer({
   isRecording,
   audioAnalyzer,
-  recordingTime,
+  transcript,
+  onStop,
+  onCancel,
+  onRetry,
 }: VoiceVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Format recording time as MM:SS
-  const formatRecordingTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
+  // Auto-scroll to bottom when text changes
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [transcript]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !isRecording) {
-      return;
-    }
+    if (!canvas || !isRecording) return;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      return;
-    }
+    if (!ctx) return;
 
-    // Set canvas size
-    const size = 200;
+    // Canvas Size
+    const size = 300;
     canvas.width = size;
     canvas.height = size;
 
     const centerX = size / 2;
     const centerY = size / 2;
-    const baseRadius = 60;
+    const baseRadius = 70;
 
-    // Get theme color based on current theme
+    // Theme Colors
     const isDarkMode = document.documentElement.classList.contains("dark");
     const themeColor = isDarkMode
-      ? getComputedStyle(document.documentElement).getPropertyValue("--studymate-green").trim()
-      : getComputedStyle(document.documentElement).getPropertyValue("--studymate-orange").trim();
+      ? getComputedStyle(document.documentElement).getPropertyValue("--studymate-green").trim() || "#4ade80"
+      : getComputedStyle(document.documentElement).getPropertyValue("--studymate-orange").trim() || "#f97316";
 
     let dataArray: Uint8Array<ArrayBuffer> | null = null;
     let bufferLength = 0;
 
-    // Set up audio analyzer if available
     if (audioAnalyzer) {
       bufferLength = audioAnalyzer.frequencyBinCount;
       dataArray = new Uint8Array(bufferLength) as Uint8Array<ArrayBuffer>;
     }
 
-    // Threshold for detecting low/no audio
-    const IDLE_THRESHOLD = 0.05;
-
     const animate = () => {
-      // Clear canvas
       ctx.clearRect(0, 0, size, size);
-
       let amplitude = 0;
 
-      // Get audio amplitude if analyzer is available
       if (audioAnalyzer && dataArray) {
         audioAnalyzer.getByteFrequencyData(dataArray);
-        
-        // Calculate average amplitude
         const sum = dataArray.reduce((acc, val) => acc + val, 0);
-        amplitude = sum / bufferLength / 255; // Normalize to 0-1
-
-        // If amplitude is below threshold, use idle animation
-        if (amplitude < IDLE_THRESHOLD) {
-          amplitude = 0.3 + Math.sin(Date.now() / 500) * 0.1;
+        amplitude = sum / bufferLength / 255;
+        
+        // Idle animation
+        if (amplitude < 0.05) {
+          amplitude = 0.2 + Math.sin(Date.now() / 800) * 0.05;
         }
       } else {
-        // Idle animation - gentle pulse when no analyzer
-        amplitude = 0.3 + Math.sin(Date.now() / 500) * 0.1;
+        amplitude = 0.2 + Math.sin(Date.now() / 800) * 0.05;
       }
 
-      // Scale radius based on amplitude
-      const scaledRadius = baseRadius + amplitude * 30;
+      const scaledRadius = baseRadius + amplitude * 50;
 
-      // Draw outer glow
-      const gradient = ctx.createRadialGradient(
-        centerX,
-        centerY,
-        scaledRadius * 0.5,
-        centerX,
-        centerY,
-        scaledRadius * 1.2
-      );
-      gradient.addColorStop(0, `${themeColor}40`); // 25% opacity
-      gradient.addColorStop(1, `${themeColor}00`); // 0% opacity
+      // Outer Glow
+      const gradient = ctx.createRadialGradient(centerX, centerY, scaledRadius * 0.5, centerX, centerY, scaledRadius * 1.5);
+      gradient.addColorStop(0, `${themeColor}40`); 
+      gradient.addColorStop(1, `${themeColor}00`); 
       
       ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.arc(centerX, centerY, scaledRadius * 1.2, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, scaledRadius * 1.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw main circle
-      ctx.fillStyle = `${themeColor}80`; // 50% opacity
+      // Main Circle
+      ctx.fillStyle = `${themeColor}90`;
       ctx.beginPath();
       ctx.arc(centerX, centerY, scaledRadius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw inner circle
+      // Inner Solid Circle
       ctx.fillStyle = themeColor;
       ctx.beginPath();
       ctx.arc(centerX, centerY, scaledRadius * 0.6, 0, Math.PI * 2);
       ctx.fill();
 
-      // Continue animation
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    // Start animation
     animate();
 
-    // Cleanup
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
   }, [isRecording, audioAnalyzer]);
 
-  if (!isRecording) {
-    return null;
-  }
+  if (!isRecording) return null;
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-between bg-white/30 dark:bg-black/40 backdrop-blur-xl animate-in fade-in duration-200"
       role="dialog"
-      aria-modal="true"
-      aria-labelledby="visualizer-title"
-      aria-describedby="visualizer-description"
     >
-      <div className="flex flex-col items-center gap-6">
-        {/* Hidden title for screen readers */}
-        <h2 id="visualizer-title" className="sr-only">
-          Voice Recording in Progress
-        </h2>
-        <p id="visualizer-description" className="sr-only">
-          Recording your voice message. The visualizer shows audio levels. Press Escape to cancel or click Stop to finish recording.
-        </p>
+      {/* Visualizer Section (Top) */}
+      <div className="flex-1 flex items-center justify-center w-full relative mt-10">
+         <canvas ref={canvasRef} className="w-[300px] h-[300px]" />
+      </div>
 
-        {/* Circular visualizer */}
-        <canvas
-          ref={canvasRef}
-          className="w-[200px] h-[200px]"
-          aria-label="Voice recording visualizer showing audio amplitude"
-          role="img"
-        />
-
-        {/* Recording timer */}
+      {/* Real-time Transcript Section (Middle) */}
+      <div className="w-full max-w-2xl px-6 mb-8 flex flex-col items-center">
         <div 
-          className="text-4xl font-bold text-white tracking-wider"
-          role="timer"
-          aria-live="off"
-          aria-label={`Recording time: ${formatRecordingTime(recordingTime)}`}
+            ref={scrollRef}
+            className="w-full text-center max-h-[200px] overflow-y-auto scrollbar-hide transition-all duration-200"
         >
-          {formatRecordingTime(recordingTime)}
+            {transcript ? (
+                <p className="text-2xl md:text-3xl font-medium text-studymate-black dark:text-white leading-relaxed drop-shadow-sm transition-opacity duration-200">
+                    "{transcript}"
+                </p>
+            ) : (
+                <p className="text-xl text-gray-500/80 dark:text-gray-400/80 font-medium animate-pulse">
+                    Listening...
+                </p>
+            )}
         </div>
+      </div>
+
+      {/* Controls Section (Bottom) */}
+      <div className="mb-12 flex items-center gap-10">
+        
+        {/* Retry Button */}
+        <button
+            onClick={onRetry}
+            className="group flex flex-col items-center gap-2"
+            title="Retry Recording"
+        >
+            <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-200/50 dark:bg-gray-800/50 backdrop-blur-md text-studymate-black dark:text-white group-hover:bg-gray-300 dark:group-hover:bg-gray-700 transition-all shadow-sm">
+                <RotateCcw className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-semibold text-studymate-black/60 dark:text-white/60 uppercase tracking-wider">Retry</span>
+        </button>
+
+        {/* Cancel Button */}
+        <button
+            onClick={onCancel}
+            className="group flex flex-col items-center gap-2"
+            title="Cancel"
+        >
+            <div className="w-14 h-14 flex items-center justify-center rounded-full bg-red-500/10 dark:bg-red-500/20 backdrop-blur-md text-red-600 dark:text-red-400 group-hover:scale-110 transition-all shadow-sm">
+                <X className="w-6 h-6" strokeWidth={3} />
+            </div>
+             <span className="text-xs font-semibold text-studymate-black/60 dark:text-white/60 uppercase tracking-wider">Cancel</span>
+        </button>
+
+        {/* Done/Send Button */}
+        <button
+            onClick={onStop}
+            className="group flex flex-col items-center gap-2"
+            title="Done"
+        >
+            <div className="w-16 h-16 flex items-center justify-center rounded-full bg-studymate-black dark:bg-white text-white dark:text-studymate-black shadow-lg group-hover:scale-110 transition-all">
+                <Check className="w-8 h-8" strokeWidth={3} />
+            </div>
+             <span className="text-xs font-semibold text-studymate-black/60 dark:text-white/60 uppercase tracking-wider">Send</span>
+        </button>
+
       </div>
     </div>
   );

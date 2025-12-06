@@ -4,7 +4,6 @@ AI Brain Service - Local AI Model Orchestration
 This FastAPI service manages multiple specialized AI models:
 - Qwen 2.5 1.5B: Primary text generation (persistent in VRAM)
 - DeepSeek OCR: Vision/OCR processing (load on demand)
-- Whisper Large-v3: Audio transcription (1.5B parameters, loaded in RAM)
 - mxbai-embed-large: Text embeddings (load on demand)
 """
 
@@ -44,26 +43,6 @@ app.add_middleware(
 CORE_MODEL = "qwen2.5:1.5b"
 VISION_MODEL = "qwen2.5vl:3b"
 EMBEDDING_MODEL = "mxbai-embed-large"
-
-# Whisper model (loaded in RAM)
-whisper_model = None
-
-
-def load_whisper_model():
-    """Load Whisper Large-v3 model into RAM at startup"""
-    global whisper_model
-    
-    try:
-        import whisper
-        logger.info("Attempting to load Whisper Large-v3 model into RAM...")
-        logger.info("Note: This may take a few minutes on first run (downloading ~3GB)")
-        whisper_model = whisper.load_model("large-v3")
-        logger.info("✓ Whisper Large-v3 model loaded successfully - audio transcription enabled")
-    except Exception as e:
-        logger.warning(f"⚠ Whisper model not loaded: {e}")
-        logger.warning("Audio transcription will be disabled")
-        logger.warning("The brain service will continue without audio support")
-        whisper_model = None
 
 
 def is_pdf(file: UploadFile) -> bool:
@@ -189,17 +168,9 @@ async def startup_event():
         logger.error(f"Failed to load core model: {e}")
         raise RuntimeError(f"Failed to load core model {CORE_MODEL}")
     
-    # Load Whisper model (optional - won't block startup if it fails)
-    try:
-        load_whisper_model()
-    except Exception as e:
-        logger.warning(f"Whisper loading skipped: {e}")
-        logger.warning("Continuing without audio transcription support")
-    
     logger.info("=" * 60)
     logger.info("AI Brain Service startup complete")
     logger.info(f"Configuration: Core Model={CORE_MODEL}, Mode=Persistent Core")
-    logger.info(f"Audio Support: {'Enabled' if whisper_model else 'Disabled (Whisper not loaded)'}")
     logger.info("=" * 60)
 
 
@@ -217,52 +188,21 @@ def home():
 @app.post("/router")
 async def intelligent_router(
     prompt: str = Form(...),
-    image: Optional[UploadFile] = File(None),
-    audio: Optional[UploadFile] = File(None)
+    image: Optional[UploadFile] = File(None)
 ):
     """
-    Intelligent router that handles text, image, and audio requests.
+    Intelligent router that handles text and image requests.
     
     Args:
         prompt: Text prompt for the AI
         image: Optional image file for OCR processing
-        audio: Optional audio file for transcription
     
     Returns:
         dict: Response containing generated text and model name
     """
     try:
         logger.info(f"Router request - prompt length: {len(prompt)}, "
-                   f"has_image: {image is not None}, has_audio: {audio is not None}")
-        
-        # Handle audio transcription if audio file provided
-        if audio:
-            if whisper_model:
-                try:
-                    logger.info(f"Processing audio file: {audio.filename}")
-                    # Save audio to temporary file
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
-                        content = await audio.read()
-                        temp_audio.write(content)
-                        temp_audio_path = temp_audio.name
-                    
-                    # Transcribe audio
-                    result = whisper_model.transcribe(temp_audio_path)
-                    transcribed_text = result["text"]
-                    logger.info(f"Audio transcribed: {transcribed_text[:100]}...")
-                    
-                    # Clean up temporary file
-                    os.unlink(temp_audio_path)
-                    
-                    # Use transcribed text as prompt
-                    prompt = transcribed_text
-                    
-                except Exception as e:
-                    logger.error(f"Audio transcription failed: {e}")
-                    # Continue with original prompt if transcription fails
-            else:
-                logger.warning("Audio file provided but Whisper model not loaded - skipping transcription")
-                logger.warning("Using original text prompt instead")
+                   f"has_image: {image is not None}")
         
         # Handle image/PDF OCR if file provided
         if image:
