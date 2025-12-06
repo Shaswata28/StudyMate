@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
+import { handleTranscribe, uploadAudio } from "./routes/transcribe";
 
 export function createServer() {
   const app = express();
@@ -18,6 +19,9 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // Transcription endpoint
+  app.post("/api/transcribe", uploadAudio, handleTranscribe);
 
   return app;
 }

@@ -1,71 +1,86 @@
 import { RequestHandler } from "express";
-import { TranscriptionResponse } from "@shared/api";
+import multer from "multer";
+import FormData from "form-data";
 
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 25 * 1024 * 1024, // 25MB limit (Whisper's max)
+  },
+});
+
+// Middleware to handle file upload
+export const uploadAudio = upload.single('audio');
+
+// Handler for transcription
 export const handleTranscribe: RequestHandler = async (req, res) => {
   try {
     // Check if file was uploaded
     if (!req.file) {
-      const errorResponse: TranscriptionResponse = {
-        text: "",
+      return res.status(400).json({
         success: false,
-        error: "No audio file provided",
-      };
-      return res.status(400).json(errorResponse);
+        error: 'No audio file provided',
+      });
     }
 
-    // Prepare form data to send to AI Brain
+    // Create form data to send to AI Brain
     const formData = new FormData();
-    
-    // Create a blob from the buffer - convert Buffer to Uint8Array first
-    const uint8Array = new Uint8Array(req.file.buffer);
-    const audioBlob = new Blob([uint8Array], { type: req.file.mimetype });
-    formData.append("audio", audioBlob, req.file.originalname);
-    formData.append("prompt", "Transcribe this audio");
+    formData.append('audio', req.file.buffer, {
+      filename: req.file.originalname || 'recording.webm',
+      contentType: req.file.mimetype,
+    });
+    formData.append('prompt', 'Transcribe this audio');
 
     // Forward to AI Brain service
-    const aiBrainUrl = "http://localhost:8001/router";
-    
-    const response = await fetch(aiBrainUrl, {
-      method: "POST",
-      body: formData,
+    const aiBrainUrl = process.env.AI_BRAIN_URL || 'http://localhost:8001';
+    const response = await fetch(`${aiBrainUrl}/router`, {
+      method: 'POST',
+      body: formData as any,
+      headers: formData.getHeaders(),
     });
 
     if (!response.ok) {
-      throw new Error(`AI Brain service returned status ${response.status}`);
+      const errorText = await response.text();
+      console.error('AI Brain transcription error:', errorText);
+      
+      return res.status(response.status).json({
+        success: false,
+        error: `Transcription service error: ${response.statusText}`,
+      });
     }
 
     const data = await response.json();
-    
-    // Extract transcribed text from AI Brain response
-    const transcribedText = data.response || data.text || "";
 
-    const successResponse: TranscriptionResponse = {
-      text: transcribedText,
+    // Return transcribed text
+    return res.json({
       success: true,
-    };
-
-    res.json(successResponse);
+      text: data.response || data.text || '',
+      model: data.model,
+    });
   } catch (error) {
-    console.error("Transcription error:", error);
+    console.error('Transcription error:', error);
     
-    let errorMessage = "Transcription failed";
-    
+    // Handle specific error types
     if (error instanceof Error) {
-      if (error.message.includes("ECONNREFUSED") || error.message.includes("fetch failed")) {
-        errorMessage = "AI Brain service is unavailable";
-      } else if (error.message.includes("timeout")) {
-        errorMessage = "Transcription request timed out";
-      } else {
-        errorMessage = error.message;
+      if (error.message.includes('ECONNREFUSED')) {
+        return res.status(503).json({
+          success: false,
+          error: 'AI Brain service is unavailable. Please ensure it is running.',
+        });
+      }
+      
+      if (error.message.includes('timeout')) {
+        return res.status(504).json({
+          success: false,
+          error: 'Transcription request timed out. Please try again.',
+        });
       }
     }
 
-    const errorResponse: TranscriptionResponse = {
-      text: "",
+    return res.status(500).json({
       success: false,
-      error: errorMessage,
-    };
-
-    res.status(500).json(errorResponse);
+      error: 'Internal server error during transcription',
+    });
   }
 };
