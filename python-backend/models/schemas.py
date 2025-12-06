@@ -255,3 +255,29 @@ class MaterialSearchRequest(BaseModel):
     """
     query: str = Field(..., min_length=1, max_length=500, description="Search query")
     limit: int = Field(default=3, ge=1, le=10, description="Maximum number of results")
+
+
+# Context Service Schemas
+
+class AcademicInfo(BaseModel):
+    """
+    User academic information from academic table.
+    Used for context-aware chat responses.
+    """
+    grade: List[str] = Field(..., description="Grade levels (e.g., ['Bachelor', 'Masters'])")
+    semester_type: str = Field(..., description="Semester type: 'double' or 'tri'")
+    semester: int = Field(..., description="Current semester number")
+    subject: List[str] = Field(default_factory=list, description="List of subjects")
+
+
+class UserContext(BaseModel):
+    """
+    Complete user context for AI chat.
+    Aggregates preferences, academic info, and chat history.
+    """
+    preferences: Optional[UserPreferences] = None
+    academic: Optional[AcademicInfo] = None
+    chat_history: List[Message] = Field(default_factory=list)
+    has_preferences: bool = False
+    has_academic: bool = False
+    has_history: bool = False

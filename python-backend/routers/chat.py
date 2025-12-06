@@ -21,6 +21,7 @@ from services.local_ai_service import (
 from services.auth_service import get_current_user, get_current_user_optional, AuthUser
 from services.supabase_client import get_user_client
 from services.service_manager import service_manager
+from services.context_service import ContextService
 from middleware.rate_limiter import limiter
 from config import config
 
@@ -28,6 +29,9 @@ logger = logging.getLogger(__name__)
 
 # Create router
 router = APIRouter(prefix="/api", tags=["chat"])
+
+# Instantiate context service
+context_service = ContextService()
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -266,10 +270,32 @@ async def save_chat_message(
             f"Attachments: {len(chat_request.attachments)}"
         )
         
+        # Retrieve user context (preferences, academic info, chat history) with timeout
+        user_context = None
+        try:
+            user_context = await context_service.get_user_context(
+                user_id=user.id,
+                course_id=course_id,
+                access_token=user.access_token,
+                timeout=2.0  # 2-second timeout for context retrieval
+            )
+            logger.info(f"User context retrieved successfully for user {user.id}, course {course_id}")
+        except Exception as e:
+            # Log error but don't fail the request - proceed without context
+            logger.error(
+                f"Failed to retrieve user context for user {user.id}, course {course_id}: "
+                f"{type(e).__name__}: {str(e)}", 
+                exc_info=True
+            )
+            logger.warning("Proceeding with chat request without user context")
+            # user_context will remain None, we'll proceed without it
+        
         # Prepare the message for AI
         message = chat_request.message
+        material_context_str = None
         
         # Perform semantic search on course materials for RAG
+        material_count = 0
         try:
             logger.info(f"Performing semantic search for course: {course_id}")
             search_results = await service_manager.processing_service.search_materials(
@@ -278,41 +304,87 @@ async def save_chat_message(
                 limit=3
             )
             
-            # If relevant materials are found, include them in the prompt
+            # If relevant materials are found, build material context string
             if search_results:
-                logger.info(f"Found {len(search_results)} relevant materials for RAG")
+                material_count = len(search_results)
+                logger.info(f"Found {material_count} relevant materials for RAG")
                 
                 # Build material context
-                material_context = "\n\n--- RELEVANT COURSE MATERIALS ---\n"
+                material_parts = []
                 for idx, result in enumerate(search_results, 1):
-                    material_context += f"\n[Material {idx}: {result['name']}]\n"
-                    material_context += f"{result['excerpt']}\n"
-                    material_context += f"(Relevance: {result['similarity_score']:.2f})\n"
+                    material_parts.append(f"[Material {idx}: {result['name']}]")
+                    material_parts.append(result['excerpt'])
+                    material_parts.append(f"(Relevance: {result['similarity_score']:.2f})")
+                    material_parts.append("")
                 
-                material_context += "\n--- END OF COURSE MATERIALS ---\n\n"
-                
-                # Augment the message with material context
-                message = (
-                    f"{material_context}"
-                    f"Based on the course materials above, please answer the following question:\n\n"
-                    f"{chat_request.message}"
-                )
-                
-                logger.info("Message augmented with material context")
+                material_context_str = "\n".join(material_parts)
+                logger.info("Material context prepared for prompt formatting")
             else:
-                logger.info("No relevant materials found, proceeding without RAG")
+                logger.warning("No relevant materials found for course, proceeding without RAG")
                 
         except Exception as e:
             # Log the error but don't fail the chat request
             # Proceed without RAG if material search fails
-            logger.warning(f"Material search failed, proceeding without RAG: {str(e)}")
+            logger.error(
+                f"Material search failed for course {course_id}: {type(e).__name__}: {str(e)}", 
+                exc_info=True
+            )
+            logger.warning("Proceeding with chat request without material context")
+        
+        # Format enhanced prompt with all context if available
+        if user_context:
+            try:
+                message = context_service.format_context_prompt(
+                    context=user_context,
+                    user_message=chat_request.message,
+                    material_context=material_context_str
+                )
+                # Log comprehensive context summary
+                logger.info(
+                    f"Enhanced prompt prepared with full context: "
+                    f"preferences={'found' if user_context.has_preferences else 'defaults'}, "
+                    f"academic={'found' if user_context.has_academic else 'missing'}, "
+                    f"history={len(user_context.chat_history)} messages, "
+                    f"materials={material_count}, "
+                    f"total_size={len(message)} characters"
+                )
+            except Exception as e:
+                # If prompt formatting fails, fall back to original message or material-only context
+                logger.error(
+                    f"Failed to format context prompt: {type(e).__name__}: {str(e)}", 
+                    exc_info=True
+                )
+                logger.warning("Falling back to message without user context formatting")
+                # Fall back to material context only if available
+                if material_context_str:
+                    message = (
+                        f"--- RELEVANT COURSE MATERIALS ---\n"
+                        f"{material_context_str}\n"
+                        f"--- CURRENT QUESTION ---\n"
+                        f"{chat_request.message}"
+                    )
+                    logger.info(f"Using fallback with material context only")
+                # Otherwise message remains as chat_request.message
+        elif material_context_str:
+            # If we have materials but no user context, use simple material augmentation
+            message = (
+                f"--- RELEVANT COURSE MATERIALS ---\n"
+                f"{material_context_str}\n"
+                f"--- CURRENT QUESTION ---\n"
+                f"{chat_request.message}"
+            )
+            logger.info(f"Message augmented with material context only: {material_count} materials, {len(message)} characters")
         
         # Call Local AI service with attachments
+        import time
+        ai_start_time = time.time()
         response_text = await local_ai_service.generate_response(
             message=message,
             history=chat_request.history if chat_request.history else None,
             attachments=chat_request.attachments if chat_request.attachments else None
         )
+        ai_elapsed_time = time.time() - ai_start_time
+        logger.info(f"AI response received successfully in {ai_elapsed_time:.3f}s")
         
         # Prepare messages for storage
         user_message = {

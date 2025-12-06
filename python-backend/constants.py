@@ -91,3 +91,17 @@ VALID_CHAT_ROLES = ['user', 'model', 'assistant']
 
 # Vector embedding dimension (for pgvector)
 EMBEDDING_DIMENSION = 384
+
+# Default User Preferences
+
+# Default moderate learning preferences (used when user has no preferences set)
+DEFAULT_PREFERENCES = {
+    "detail_level": 0.5,
+    "example_preference": 0.5,
+    "analogy_preference": 0.5,
+    "technical_language": 0.5,
+    "structure_preference": 0.5,
+    "visual_preference": 0.5,
+    "learning_pace": "moderate",
+    "prior_experience": "intermediate"
+}
