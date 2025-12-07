@@ -1,4 +1,4 @@
-import { X, Folder, Download, Grid3x3, List } from "lucide-react";
+import { X, Folder, Trash2, Grid3x3, List } from "lucide-react";
 import { useState } from "react";
 
 interface UploadedFile {
@@ -12,9 +12,20 @@ interface MaterialsModalProps {
   onClose: () => void;
   files: UploadedFile[];
   onRemoveFile?: (fileId: string) => void;
+  isLoadingMaterials?: boolean;
+  materialsError?: string | null;
+  onRetryMaterials?: () => void;
 }
 
-export default function MaterialsModal({ isOpen, onClose, files, onRemoveFile }: MaterialsModalProps) {
+export default function MaterialsModal({ 
+  isOpen, 
+  onClose, 
+  files, 
+  onRemoveFile,
+  isLoadingMaterials = false,
+  materialsError = null,
+  onRetryMaterials,
+}: MaterialsModalProps) {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -64,7 +75,31 @@ export default function MaterialsModal({ isOpen, onClose, files, onRemoveFile }:
           )}
         </div>
 
-        {files.length === 0 ? (
+        {/* Loading State */}
+        {isLoadingMaterials && files.length === 0 ? (
+          <div className="py-12 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-studymate-orange dark:border-studymate-green mx-auto mb-4"></div>
+            <p className="font-audiowide text-sm sm:text-base tracking-[0.8px] text-gray-500 dark:text-gray-400">
+              Loading materials...
+            </p>
+          </div>
+        ) : /* Error State */
+        materialsError && files.length === 0 ? (
+          <div className="py-12 text-center">
+            <p className="font-roboto text-sm sm:text-base text-red-600 dark:text-red-400 mb-4">
+              {materialsError}
+            </p>
+            {onRetryMaterials && (
+              <button
+                onClick={onRetryMaterials}
+                className="px-6 py-3 bg-studymate-black dark:bg-white text-white dark:text-black font-audiowide text-xs sm:text-sm tracking-[1.3px] rounded hover:shadow-lg transition-all duration-200"
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        ) : /* Empty State */
+        files.length === 0 ? (
           <div className="py-12 text-center">
             <Folder className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" strokeWidth={1} />
             <p className="font-audiowide text-sm sm:text-base tracking-[0.8px] text-gray-500 dark:text-gray-400">
@@ -140,23 +175,17 @@ export default function MaterialsModal({ isOpen, onClose, files, onRemoveFile }:
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          className="p-2 hover:bg-white dark:hover:bg-slate-600 rounded transition-all duration-200 flex-shrink-0 btn-micro"
-                          aria-label={`Download ${file.name}`}
-                        >
-                          <Download className="w-4 h-4 sm:w-5 sm:h-5 text-studymate-orange dark:text-studymate-green" strokeWidth={2} />
-                        </button>
-                        {onRemoveFile && (
+                      {onRemoveFile && (
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => onRemoveFile(file.id)}
                             className="p-2 hover:bg-red-100 dark:hover:bg-red-950/30 rounded transition-all duration-200 flex-shrink-0 btn-micro"
-                            aria-label={`Remove ${file.name}`}
+                            aria-label={`Delete ${file.name}`}
                           >
-                            <X className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400" strokeWidth={2} />
+                            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400" strokeWidth={2} />
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -181,23 +210,17 @@ export default function MaterialsModal({ isOpen, onClose, files, onRemoveFile }:
                         <p className="font-roboto text-xs text-gray-500 dark:text-gray-400">
                           {file.type.split("/")[1] || "file"}
                         </p>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            className="p-1 hover:bg-white dark:hover:bg-slate-600 rounded transition-all duration-200 btn-micro"
-                            aria-label={`Download ${file.name}`}
-                          >
-                            <Download className="w-3 h-3 sm:w-4 sm:h-4 text-studymate-orange dark:text-studymate-green" strokeWidth={2} />
-                          </button>
-                          {onRemoveFile && (
+                        {onRemoveFile && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => onRemoveFile(file.id)}
                               className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded transition-all duration-200 btn-micro"
-                              aria-label={`Remove ${file.name}`}
+                              aria-label={`Delete ${file.name}`}
                             >
-                              <X className="w-3 h-3 sm:w-4 sm:h-4 text-red-600 dark:text-red-400" strokeWidth={2} />
+                              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 text-red-600 dark:text-red-400" strokeWidth={2} />
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))

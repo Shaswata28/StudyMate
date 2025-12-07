@@ -27,6 +27,12 @@ interface WorkspaceProps {
   onRemovePendingFile?: (fileId: string) => void;
   onMaterialsClick?: () => void;
   isLoadingResponse?: boolean;
+  isLoadingChatHistory?: boolean;
+  isLoadingMaterials?: boolean;
+  chatHistoryError?: string | null;
+  materialsError?: string | null;
+  onRetryChatHistory?: () => void;
+  onRetryMaterials?: () => void;
 }
 
 export default function Workspace({
@@ -40,6 +46,12 @@ export default function Workspace({
   onRemovePendingFile,
   onMaterialsClick,
   isLoadingResponse = false,
+  isLoadingChatHistory = false,
+  isLoadingMaterials = false,
+  chatHistoryError = null,
+  materialsError = null,
+  onRetryChatHistory,
+  onRetryMaterials,
 }: WorkspaceProps) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-950">
@@ -77,8 +89,41 @@ export default function Workspace({
 
       {/* Main Content Area - Messages and Files */}
       <div className="flex-1 overflow-hidden flex flex-col px-4 md:px-8 lg:px-12 py-6 md:py-8">
-        {/* Chat Container */}
-        <ChatContainer messages={messages} isLoading={isLoadingResponse} />
+        {/* Loading State for Chat History */}
+        {isLoadingChatHistory && messages.length === 0 && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-studymate-black dark:border-white mx-auto mb-4"></div>
+              <p className="font-audiowide text-[14px] tracking-[1.4px] text-black/60 dark:text-white/60">
+                Loading chat history...
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State for Chat History */}
+        {chatHistoryError && !isLoadingChatHistory && messages.length === 0 && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center max-w-md px-4">
+              <p className="font-roboto text-[14px] text-red-600 dark:text-red-400 mb-4">
+                {chatHistoryError}
+              </p>
+              {onRetryChatHistory && (
+                <button
+                  onClick={onRetryChatHistory}
+                  className="px-6 py-3 bg-studymate-black dark:bg-white text-white dark:text-black font-audiowide text-[13px] tracking-[1.3px] rounded hover:shadow-lg transition-all duration-200"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Chat Container - Only show if not loading and no error, or if there are messages */}
+        {(!isLoadingChatHistory || messages.length > 0) && !chatHistoryError && (
+          <ChatContainer messages={messages} isLoading={isLoadingResponse} />
+        )}
       </div>
 
       {/* Chat Input Section */}

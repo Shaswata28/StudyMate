@@ -1,4 +1,4 @@
-import { Menu, Edit, Search } from "lucide-react";
+import { Menu, Edit, Search, Trash2 } from "lucide-react";
 import UserProfile from "./UserProfile";
 
 interface Course {
@@ -11,6 +11,7 @@ interface Course {
 interface SidebarProps {
   courses: Course[];
   onCourseSelect?: (courseId: string) => void;
+  onCourseDelete?: (courseId: string) => void;
   isCollapsed: boolean;
   onToggle: () => void;
   onNewCourseClick?: () => void;
@@ -21,6 +22,7 @@ interface SidebarProps {
 export default function Sidebar({
   courses,
   onCourseSelect,
+  onCourseDelete,
   isCollapsed,
   onToggle,
   onNewCourseClick,
@@ -90,29 +92,43 @@ export default function Sidebar({
           role="list"
         >
           {courses.map((course) => (
-            <button
+            <div
               key={course.id}
-              className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-all duration-200 w-full ${
+              className={`flex items-center gap-2 p-2 rounded transition-all duration-200 w-full group ${
                 course.active && !isCollapsed ? "bg-studymate-gray dark:bg-slate-700" : "hover:bg-gray-50 dark:hover:bg-slate-800"
-              } ${isCollapsed ? 'justify-center' : ''} btn-micro`}
-              onClick={() => onCourseSelect?.(course.id)}
-              aria-label={`Select course ${course.name}`}
-              aria-current={course.active ? "page" : undefined}
+              } ${isCollapsed ? 'justify-center' : ''}`}
               role="listitem"
             >
-              <div
-                className={`rounded-full flex-shrink-0 ${
-                  isCollapsed ? 'w-3 h-3' : 'w-3 h-3'
-                }`}
-                style={{ backgroundColor: course.color }}
-                aria-hidden="true"
-              />
-              {!isCollapsed && (
-                <span className="font-audiowide text-[19px] text-black dark:text-white whitespace-nowrap">
-                  {course.name}
-                </span>
+              <button
+                className="flex items-center gap-3 flex-1 cursor-pointer btn-micro"
+                onClick={() => onCourseSelect?.(course.id)}
+                aria-label={`Select course ${course.name}`}
+                aria-current={course.active ? "page" : undefined}
+              >
+                <div
+                  className="rounded-full flex-shrink-0 w-3 h-3"
+                  style={{ backgroundColor: course.color }}
+                  aria-hidden="true"
+                />
+                {!isCollapsed && (
+                  <span className="font-audiowide text-[19px] text-black dark:text-white whitespace-nowrap">
+                    {course.name}
+                  </span>
+                )}
+              </button>
+              {!isCollapsed && onCourseDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCourseDelete(course.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded transition-all duration-200 btn-micro"
+                  aria-label={`Delete course ${course.name}`}
+                >
+                  <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" strokeWidth={2} />
+                </button>
               )}
-            </button>
+            </div>
           ))}
         </div>
       </div>
