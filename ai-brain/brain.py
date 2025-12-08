@@ -40,7 +40,7 @@ app.add_middleware(
 )
 
 # Model configuration
-CORE_MODEL = "qwen2.5:1.5b"
+CORE_MODEL = "qwen2.5:3b"
 VISION_MODEL = "qwen2.5vl:3b"
 EMBEDDING_MODEL = "mxbai-embed-large"
 
@@ -180,8 +180,7 @@ def home():
     return {
         "status": "Active",
         "core_model": CORE_MODEL,
-        "mode": "Persistent Core",
-        "whisper_loaded": whisper_model is not None
+        "mode": "Persistent Core"
     }
 
 

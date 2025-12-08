@@ -75,81 +75,40 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      // ... keep existing keyframes/animation ...
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
         "expand-collapse": {
-          from: {
-            maxHeight: "0",
-            opacity: "0",
-          },
-          to: {
-            maxHeight: "1000px",
-            opacity: "1",
-          },
+          from: { maxHeight: "0", opacity: "0" },
+          to: { maxHeight: "1000px", opacity: "1" },
         },
         "scale-pulse": {
-          "0%, 100%": {
-            transform: "scale(1)",
-            opacity: "1",
-          },
-          "50%": {
-            transform: "scale(0.95)",
-            opacity: "0.8",
-          },
+          "0%, 100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(0.95)", opacity: "0.8" },
         },
         "float-up": {
-          from: {
-            transform: "translateY(0px)",
-            opacity: "0",
-          },
-          to: {
-            transform: "translateY(-20px)",
-            opacity: "1",
-          },
+          from: { transform: "translateY(0px)", opacity: "0" },
+          to: { transform: "translateY(-20px)", opacity: "1" },
         },
         "bounce-subtle": {
-          "0%, 100%": {
-            transform: "translateY(0)",
-          },
-          "50%": {
-            transform: "translateY(-2px)",
-          },
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-2px)" },
         },
         "success-checkmark": {
-          "0%": {
-            strokeDashoffset: "100",
-            opacity: "0",
-          },
-          "50%": {
-            opacity: "1",
-          },
-          "100%": {
-            strokeDashoffset: "0",
-            opacity: "1",
-          },
+          "0%": { strokeDashoffset: "100", opacity: "0" },
+          "50%": { opacity: "1" },
+          "100%": { strokeDashoffset: "0", opacity: "1" },
         },
         "progress-fill": {
-          "0%": {
-            width: "0%",
-          },
-          "100%": {
-            width: "var(--progress-width)",
-          },
+          "0%": { width: "0%" },
+          "100%": { width: "var(--progress-width)" },
         },
       },
       animation: {
@@ -164,5 +123,9 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("tailwind-scrollbar")({ nocompatible: true })],
+  plugins: [
+    require("tailwindcss-animate"), 
+    require("tailwind-scrollbar")({ nocompatible: true }),
+    require("@tailwindcss/typography"), // <--- ADD THIS LINE
+  ],
 } satisfies Config;

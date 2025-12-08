@@ -188,7 +188,7 @@ fi
 
 # Test imports
 print_info "Testing Python imports..."
-python3 -c "import fastapi, uvicorn, ollama, whisper, torch" 2>/dev/null
+python3 -c "import fastapi, uvicorn, ollama, torch" 2>/dev/null
 if [ $? -eq 0 ]; then
     print_success "All Python packages imported successfully"
 else

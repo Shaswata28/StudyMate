@@ -1,4 +1,8 @@
-import { useMemo } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css"; // <--- CRITICAL: Imports the math styling
 
 interface ChatMessageProps {
   id: string;
@@ -14,48 +18,6 @@ export default function ChatMessage({
   timestamp,
   attachments,
 }: ChatMessageProps) {
-  const formattedContent = useMemo(() => {
-    if (!isAI) return text;
-
-    // Simple markdown parsing for code blocks
-    let content = text;
-
-    // Parse code blocks
-    const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
-    const parts: (React.ReactNode | string)[] = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = codeBlockRegex.exec(content)) !== null) {
-      // Add text before code block
-      if (match.index > lastIndex) {
-        parts.push(parseInlineMarkdown(content.substring(lastIndex, match.index)));
-      }
-
-      // Add code block
-      const language = match[1] || "plaintext";
-      const code = match[2];
-      parts.push(
-        <div key={`code-${match.index}`} className="my-3 rounded-lg overflow-hidden bg-slate-900 dark:bg-slate-950">
-          <div className="px-3 py-1 bg-slate-800 dark:bg-slate-900 text-xs text-gray-400 font-mono">
-            {language}
-          </div>
-          <pre className="p-3 overflow-x-auto">
-            <code className="text-sm text-gray-100 font-mono">{code.trim()}</code>
-          </pre>
-        </div>
-      );
-      lastIndex = codeBlockRegex.lastIndex;
-    }
-
-    // Add remaining text
-    if (lastIndex < content.length) {
-      parts.push(parseInlineMarkdown(content.substring(lastIndex)));
-    }
-
-    return parts.length > 0 ? parts : parseInlineMarkdown(content);
-  }, [text, isAI]);
-
   return (
     <div
       className={`flex gap-4 mb-4 message-enter ${
@@ -63,7 +25,7 @@ export default function ChatMessage({
       }`}
     >
       {isAI && (
-        <div className="w-8 h-8 rounded-full bg-studymate-orange dark:bg-studymate-orange flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-full bg-studymate-orange flex items-center justify-center flex-shrink-0">
           <span className="text-white font-bold text-sm">AI</span>
         </div>
       )}
@@ -72,11 +34,11 @@ export default function ChatMessage({
         className={`rounded-lg px-4 py-3 message-enter ${
           isAI
             ? "flex-1 bg-gray-100 dark:bg-slate-800 text-black dark:text-white rounded-tl-none"
-            : "max-w-[65%] bg-studymate-black dark:bg-studymate-black text-white rounded-tr-none"
+            : "max-w-[75%] bg-studymate-black dark:bg-studymate-black text-white rounded-tr-none"
         }`}
         style={{ fontFamily: "'Exo 2', sans-serif" }}
       >
-        {/* Show attachments if present (for user messages) */}
+        {/* Attachments (User only) */}
         {attachments && attachments.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
             {attachments.map((file, index) => (
@@ -95,16 +57,85 @@ export default function ChatMessage({
           </div>
         )}
 
-        <div className="text-base md:text-lg leading-relaxed whitespace-pre-wrap break-words">
-          {formattedContent}
-        </div>
+        {isAI ? (
+          /* AI Message: Render Markdown + Math + Tables */
+          <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]} // Added remarkMath
+              rehypePlugins={[rehypeKatex]}           // Added rehypeKatex
+              components={{
+                // Custom Code Block Styling
+                code({ node, inline, className, children, ...props }: any) {
+                  const match = /language-(\w+)/.exec(className || "");
+                  return !inline && match ? (
+                    <div className="my-3 rounded-lg overflow-hidden bg-slate-900 dark:bg-slate-950">
+                      <div className="px-3 py-1 bg-slate-800 dark:bg-slate-900 text-xs text-gray-400 font-mono">
+                        {match[1]}
+                      </div>
+                      <pre className="p-3 overflow-x-auto m-0">
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      </pre>
+                    </div>
+                  ) : (
+                    <code
+                      className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-studymate-orange"
+                      {...props}
+                    >
+                      {children}
+                    </code>
+                  );
+                },
+                // Custom Table Styling
+                table: ({ node, ...props }) => (
+                  <div className="overflow-x-auto my-4 rounded-lg border border-border">
+                    <table className="min-w-full divide-y divide-border" {...props} />
+                  </div>
+                ),
+                th: ({ node, ...props }) => (
+                  <th className="bg-muted px-4 py-2 text-left font-bold" {...props} />
+                ),
+                td: ({ node, ...props }) => (
+                  <td className="px-4 py-2 border-t border-border" {...props} />
+                ),
+                // Custom Link Styling
+                a: ({ node, ...props }) => (
+                  <a 
+                    className="text-studymate-orange hover:underline font-medium" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    {...props} 
+                  />
+                ),
+                // Style Math Elements (Optional Customization)
+                // This targets the span created by KaTeX for inline math
+                span: ({ node, className, children, ...props }) => {
+                  if (className?.includes('katex')) {
+                    return <span className={className} {...props}>{children}</span>;
+                  }
+                  return <span className={className} {...props}>{children}</span>;
+                }
+              }}
+            >
+              {text}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          /* User Message: Simple Text (Preserve whitespace) */
+          <div className="text-base md:text-lg leading-relaxed whitespace-pre-wrap break-words">
+            {text}
+          </div>
+        )}
 
         {timestamp && (
-          <p className={`text-xs mt-2 ${
-            isAI
-              ? "text-gray-500 dark:text-gray-400"
-              : "text-gray-200 dark:text-gray-300"
-          }`}>
+          <p
+            className={`text-xs mt-2 ${
+              isAI
+                ? "text-gray-500 dark:text-gray-400"
+                : "text-gray-200 dark:text-gray-300"
+            }`}
+          >
             {timestamp.toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -122,29 +153,4 @@ function getFileIcon(type: string): string {
   if (type.includes("video")) return "🎥";
   if (type.includes("word")) return "📝";
   return "📋";
-}
-
-function parseInlineMarkdown(text: string): React.ReactNode {
-  const parts: (React.ReactNode | string)[] = [];
-  let lastIndex = 0;
-
-  // Bold text **text**
-  const boldRegex = /\*\*([^*]+)\*\*/g;
-  let match;
-
-  while ((match = boldRegex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.substring(lastIndex, match.index));
-    }
-    parts.push(
-      <strong key={`bold-${match.index}`}>{match[1]}</strong>
-    );
-    lastIndex = boldRegex.lastIndex;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(text.substring(lastIndex));
-  }
-
-  return parts.length > 1 ? parts : text;
 }

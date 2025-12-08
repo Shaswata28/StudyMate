@@ -1,123 +1,46 @@
 """
 Chat router for handling AI chat requests with Supabase integration.
-Implements chat endpoints with validation, rate limiting, error handling,
-and chat history persistence to Supabase.
-Uses local AI brain service for AI responses.
+Delegates logic to the Orchestrator service.
 """
 
 from fastapi import APIRouter, Request, HTTPException, Depends, status
 from fastapi.responses import JSONResponse
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 import logging
 
-from models.schemas import ChatRequest, ChatResponse, ErrorResponse, Message
-from services.local_ai_service import (
-    local_ai_service,
-    LocalAIAPIError,
-    LocalAITimeoutError,
-    LocalAIServiceError
-)
-from services.auth_service import get_current_user, get_current_user_optional, AuthUser
+from models.schemas import ChatRequest, ChatResponse
+from services.auth_service import get_current_user, AuthUser
 from services.supabase_client import get_user_client
-from services.service_manager import service_manager
-from services.context_service import ContextService
+from services.orchestrator import orchestrator
 from middleware.rate_limiter import limiter
 from config import config
 
 logger = logging.getLogger(__name__)
 
-# Create router
 router = APIRouter(prefix="/api", tags=["chat"])
-
-# Instantiate context service
-context_service = ContextService()
-
 
 @router.post("/chat", response_model=ChatResponse)
 @limiter.limit(f"{config.RATE_LIMIT_REQUESTS}/{config.RATE_LIMIT_WINDOW}seconds")
 async def chat_endpoint(
     request: Request, 
     chat_request: ChatRequest,
-    course_id: Optional[str] = None
+    course_id: Optional[str] = None,
+    user: AuthUser = Depends(get_current_user)
 ):
     """
-    Handle chat requests from the frontend with optional RAG support.
-    
-    Validates the request, optionally performs semantic search on course materials,
-    calls the Local AI brain service with message, history, and material context,
-    and returns the AI response with a timestamp.
-    
-    Args:
-        request: FastAPI request object (needed for rate limiting)
-        chat_request: Validated ChatRequest containing message and optional history
-        course_id: Optional course ID for RAG (Retrieval Augmented Generation)
-        
-    Returns:
-        ChatResponse with AI response and timestamp
-        
-    Raises:
-        HTTPException: For various error conditions (400, 500, 503)
-        
-    Requirements: 5.1, 5.2, 5.3, 5.5
+    Unified chat endpoint.
+    If course_id is provided, it triggers the full RAG/Orchestrator pipeline.
+    If not, it acts as a general chat (but still routed via Orchestrator for consistency).
     """
     try:
-        # Log incoming request
-        logger.info(
-            f"Chat request received - Message length: {len(chat_request.message)}, "
-            f"History length: {len(chat_request.history)}, "
-            f"Attachments: {len(chat_request.attachments)}, "
-            f"Course ID: {course_id}"
-        )
-        
-        # Prepare the message for AI
-        message = chat_request.message
-        
-        # If course_id is provided, perform semantic search and augment the prompt
-        if course_id:
-            try:
-                # Perform semantic search on course materials
-                logger.info(f"Performing semantic search for course: {course_id}")
-                search_results = await service_manager.processing_service.search_materials(
-                    course_id=course_id,
-                    query=chat_request.message,
-                    limit=3
-                )
-                
-                # If relevant materials are found, include them in the prompt
-                if search_results:
-                    logger.info(f"Found {len(search_results)} relevant materials for RAG")
-                    
-                    # Build material context
-                    material_context = "\n\n--- RELEVANT COURSE MATERIALS ---\n"
-                    for idx, result in enumerate(search_results, 1):
-                        material_context += f"\n[Material {idx}: {result['name']}]\n"
-                        material_context += f"{result['excerpt']}\n"
-                        material_context += f"(Relevance: {result['similarity_score']:.2f})\n"
-                    
-                    material_context += "\n--- END OF COURSE MATERIALS ---\n\n"
-                    
-                    # Augment the message with material context
-                    message = (
-                        f"{material_context}"
-                        f"Based on the course materials above, please answer the following question:\n\n"
-                        f"{chat_request.message}"
-                    )
-                    
-                    logger.info("Message augmented with material context")
-                else:
-                    logger.info("No relevant materials found, proceeding without RAG")
-                    
-            except Exception as e:
-                # Log the error but don't fail the chat request
-                # Proceed without RAG if material search fails
-                logger.warning(f"Material search failed, proceeding without RAG: {str(e)}")
-        
-        # Call Local AI service with attachments
-        response_text = await local_ai_service.generate_response(
-            message=message,
-            history=chat_request.history if chat_request.history else None,
-            attachments=chat_request.attachments if chat_request.attachments else None
+        # Hand off to Orchestrator (The "Brain")
+        # The Orchestrator handles Intent Classification, RAG, and Personality
+        response_text = await orchestrator.process_chat_request(
+            user_id=user.id,
+            course_id=course_id if course_id else "global", # Handle global chat
+            chat_request=chat_request,
+            access_token=user.access_token
         )
         
         # Create response with timestamp
@@ -126,99 +49,13 @@ async def chat_endpoint(
             timestamp=datetime.utcnow().isoformat() + "Z"
         )
         
-        logger.info("Chat request completed successfully")
         return response
-        
-    except LocalAITimeoutError as e:
-        # Handle timeout errors (503)
-        logger.error(f"Timeout error: {str(e)}")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "error": str(e),
-                "code": "TIMEOUT_ERROR"
-            }
-        )
-        
-    except LocalAIAPIError as e:
-        # Handle Local AI API errors (503)
-        logger.error(f"Local AI API error: {str(e)}")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "error": str(e),
-                "code": "LOCAL_AI_API_ERROR"
-            }
-        )
-        
-    except LocalAIServiceError as e:
-        # Handle general service errors (500)
-        logger.error(f"Local AI service error: {str(e)}")
+
+    except Exception as e:
+        logger.error(f"Global chat error: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
-            content={
-                "error": "Something went wrong. Please try again.",
-                "code": "SERVICE_ERROR"
-            }
-        )
-        
-    except Exception as e:
-        # Handle unexpected errors (500)
-        logger.error(f"Unexpected error in chat endpoint: {type(e).__name__}: {str(e)}", exc_info=True)
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "Something went wrong. Please try again.",
-                "code": "INTERNAL_ERROR"
-            }
-        )
-
-
-
-@router.get("/courses/{course_id}/chat")
-async def get_chat_history(
-    course_id: str,
-    user: AuthUser = Depends(get_current_user)
-):
-    """
-    Get chat history for a specific course from Supabase.
-    
-    Retrieves all chat messages for the specified course, ordered chronologically.
-    Only returns chat history for courses owned by the authenticated user.
-    
-    Args:
-        course_id: UUID of the course
-        user: Authenticated user from JWT token
-        
-    Returns:
-        List of chat history records with message arrays
-        
-    Requirements: 7.1, 7.2, 7.4
-    """
-    try:
-        client = get_user_client(user.access_token)
-        
-        # Verify course ownership
-        course_result = client.table("courses").select("id").eq("id", course_id).eq("user_id", user.id).execute()
-        if not course_result.data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Course not found"
-            )
-        
-        # Get chat history ordered by creation time (chronological)
-        result = client.table("chat_history").select("*").eq("course_id", course_id).order("created_at", desc=False).execute()
-        
-        logger.info(f"Chat history retrieved for course: {course_id}, user: {user.id}")
-        return result.data
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to get chat history: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve chat history"
+            content={"error": "Something went wrong.", "code": "INTERNAL_ERROR"}
         )
 
 
@@ -230,233 +67,63 @@ async def save_chat_message(
     user: AuthUser = Depends(get_current_user)
 ):
     """
-    Save chat message to Supabase and get AI response with RAG support.
-    
-    This endpoint combines the chat functionality with persistence and RAG:
-    1. Verifies course ownership
-    2. Performs semantic search on course materials
-    3. Augments prompt with relevant material context
-    4. Sends message to Local AI brain service
-    5. Saves both user message and AI response to chat_history table
-    
-    The chat history is stored as a JSONB array of message objects.
-    
-    Args:
-        course_id: UUID of the course
-        request: FastAPI request object (for rate limiting)
-        chat_request: Chat request with message and optional history
-        user: Authenticated user from JWT token
-        
-    Returns:
-        ChatResponse with AI response and timestamp
-        
-    Requirements: 5.1, 5.2, 5.3, 5.5, 7.1, 7.2, 7.4
+    Course-specific chat with History persistence and RAG.
     """
     try:
         client = get_user_client(user.access_token)
         
-        # Verify course ownership
+        # 1. Verify Ownership
         course_result = client.table("courses").select("id").eq("id", course_id).eq("user_id", user.id).execute()
         if not course_result.data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Course not found"
-            )
+            raise HTTPException(status_code=404, detail="Course not found")
         
-        # Log incoming request
-        logger.info(
-            f"Chat request for course {course_id} - Message length: {len(chat_request.message)}, "
-            f"History length: {len(chat_request.history)}, "
-            f"Attachments: {len(chat_request.attachments)}"
+        # 2. Process via Orchestrator
+        # This allows handling "Hybrid" questions (e.g. "Explain this slide and tell a joke")
+        response_text = await orchestrator.process_chat_request(
+            user_id=user.id,
+            course_id=course_id,
+            chat_request=chat_request,
+            access_token=user.access_token
         )
         
-        # Retrieve user context (preferences, academic info, chat history) with timeout
-        user_context = None
-        try:
-            user_context = await context_service.get_user_context(
-                user_id=user.id,
-                course_id=course_id,
-                access_token=user.access_token,
-                timeout=2.0  # 2-second timeout for context retrieval
-            )
-            logger.info(f"User context retrieved successfully for user {user.id}, course {course_id}")
-        except Exception as e:
-            # Log error but don't fail the request - proceed without context
-            logger.error(
-                f"Failed to retrieve user context for user {user.id}, course {course_id}: "
-                f"{type(e).__name__}: {str(e)}", 
-                exc_info=True
-            )
-            logger.warning("Proceeding with chat request without user context")
-            # user_context will remain None, we'll proceed without it
+        # 3. Save History to Supabase
+        user_message = {"role": "user", "content": chat_request.message}
+        ai_message = {"role": "model", "content": response_text}
         
-        # Prepare the message for AI
-        message = chat_request.message
-        material_context_str = None
-        
-        # Perform semantic search on course materials for RAG
-        material_count = 0
-        try:
-            logger.info(f"Performing semantic search for course: {course_id}")
-            search_results = await service_manager.processing_service.search_materials(
-                course_id=course_id,
-                query=chat_request.message,
-                limit=3
-            )
-            
-            # If relevant materials are found, build material context string
-            if search_results:
-                material_count = len(search_results)
-                logger.info(f"Found {material_count} relevant materials for RAG")
-                
-                # Build material context
-                material_parts = []
-                for idx, result in enumerate(search_results, 1):
-                    material_parts.append(f"[Material {idx}: {result['name']}]")
-                    material_parts.append(result['excerpt'])
-                    material_parts.append(f"(Relevance: {result['similarity_score']:.2f})")
-                    material_parts.append("")
-                
-                material_context_str = "\n".join(material_parts)
-                logger.info("Material context prepared for prompt formatting")
-            else:
-                logger.warning("No relevant materials found for course, proceeding without RAG")
-                
-        except Exception as e:
-            # Log the error but don't fail the chat request
-            # Proceed without RAG if material search fails
-            logger.error(
-                f"Material search failed for course {course_id}: {type(e).__name__}: {str(e)}", 
-                exc_info=True
-            )
-            logger.warning("Proceeding with chat request without material context")
-        
-        # Format enhanced prompt with all context if available
-        if user_context:
-            try:
-                message = context_service.format_context_prompt(
-                    context=user_context,
-                    user_message=chat_request.message,
-                    material_context=material_context_str
-                )
-                # Log comprehensive context summary
-                logger.info(
-                    f"Enhanced prompt prepared with full context: "
-                    f"preferences={'found' if user_context.has_preferences else 'defaults'}, "
-                    f"academic={'found' if user_context.has_academic else 'missing'}, "
-                    f"history={len(user_context.chat_history)} messages, "
-                    f"materials={material_count}, "
-                    f"total_size={len(message)} characters"
-                )
-            except Exception as e:
-                # If prompt formatting fails, fall back to original message or material-only context
-                logger.error(
-                    f"Failed to format context prompt: {type(e).__name__}: {str(e)}", 
-                    exc_info=True
-                )
-                logger.warning("Falling back to message without user context formatting")
-                # Fall back to material context only if available
-                if material_context_str:
-                    message = (
-                        f"--- RELEVANT COURSE MATERIALS ---\n"
-                        f"{material_context_str}\n"
-                        f"--- CURRENT QUESTION ---\n"
-                        f"{chat_request.message}"
-                    )
-                    logger.info(f"Using fallback with material context only")
-                # Otherwise message remains as chat_request.message
-        elif material_context_str:
-            # If we have materials but no user context, use simple material augmentation
-            message = (
-                f"--- RELEVANT COURSE MATERIALS ---\n"
-                f"{material_context_str}\n"
-                f"--- CURRENT QUESTION ---\n"
-                f"{chat_request.message}"
-            )
-            logger.info(f"Message augmented with material context only: {material_count} materials, {len(message)} characters")
-        
-        # Call Local AI service with attachments
-        import time
-        ai_start_time = time.time()
-        response_text = await local_ai_service.generate_response(
-            message=message,
-            history=chat_request.history if chat_request.history else None,
-            attachments=chat_request.attachments if chat_request.attachments else None
-        )
-        ai_elapsed_time = time.time() - ai_start_time
-        logger.info(f"AI response received successfully in {ai_elapsed_time:.3f}s")
-        
-        # Prepare messages for storage
-        user_message = {
-            "role": "user",
-            "content": chat_request.message
-        }
-        
-        ai_message = {
-            "role": "model",
-            "content": response_text
-        }
-        
-        # Save to chat_history table
-        # Store as JSONB array: [user_message, ai_message]
-        chat_result = client.table("chat_history").insert({
+        client.table("chat_history").insert({
             "course_id": course_id,
             "history": [user_message, ai_message]
         }).execute()
         
-        if not chat_result.data:
-            logger.warning(f"Failed to save chat history for course: {course_id}")
-        else:
-            logger.info(f"Chat history saved for course: {course_id}, record: {chat_result.data[0]['id']}")
-        
-        # Create response with timestamp
-        response = ChatResponse(
+        # 4. Return Response
+        return ChatResponse(
             response=response_text,
             timestamp=datetime.utcnow().isoformat() + "Z"
         )
         
-        logger.info("Chat request completed successfully")
-        return response
-        
     except HTTPException:
         raise
-    except LocalAITimeoutError as e:
-        # Handle timeout errors (503)
-        logger.error(f"Timeout error: {str(e)}")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "error": str(e),
-                "code": "TIMEOUT_ERROR"
-            }
-        )
-    except LocalAIAPIError as e:
-        # Handle Local AI API errors (503)
-        logger.error(f"Local AI API error: {str(e)}")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "error": str(e),
-                "code": "LOCAL_AI_API_ERROR"
-            }
-        )
-    except LocalAIServiceError as e:
-        # Handle general service errors (500)
-        logger.error(f"Local AI service error: {str(e)}")
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "Something went wrong. Please try again.",
-                "code": "SERVICE_ERROR"
-            }
-        )
     except Exception as e:
-        # Handle unexpected errors (500)
-        logger.error(f"Unexpected error in chat endpoint: {type(e).__name__}: {str(e)}", exc_info=True)
+        logger.error(f"Course chat error: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
-            content={
-                "error": "Something went wrong. Please try again.",
-                "code": "INTERNAL_ERROR"
-            }
+            content={"error": str(e), "code": "INTERNAL_ERROR"}
         )
+
+# Keep the history retrieval endpoint as is (it's purely DB read)
+@router.get("/courses/{course_id}/chat")
+async def get_chat_history(
+    course_id: str,
+    user: AuthUser = Depends(get_current_user)
+):
+    try:
+        client = get_user_client(user.access_token)
+        # Verify ownership
+        course_result = client.table("courses").select("id").eq("id", course_id).eq("user_id", user.id).execute()
+        if not course_result.data:
+            raise HTTPException(status_code=404, detail="Course not found")
+            
+        result = client.table("chat_history").select("*").eq("course_id", course_id).order("created_at", desc=False).execute()
+        return result.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to retrieve history")
