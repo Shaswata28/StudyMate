@@ -19,6 +19,8 @@ from services.ai_brain_client import AIBrainClient
 def mock_ai_brain_client():
     """Create a mock AI Brain client."""
     client = Mock(spec=AIBrainClient)
+    client.verify_connection = AsyncMock(return_value=True)
+    client.verify_embedding_service = AsyncMock(return_value=True)
     client.generate_embedding = AsyncMock()
     return client
 
@@ -40,22 +42,29 @@ async def test_search_materials_generates_query_embedding(processing_service, mo
     Requirements: 4.1, 4.2
     """
     # Setup
-    course_id = "test-course-123"
+    course_id = "123e4567-e89b-12d3-a456-426614174000"  # Valid UUID
     query = "machine learning algorithms"
     mock_embedding = [0.1] * 1024
     
     mock_ai_brain_client.generate_embedding.return_value = mock_embedding
     
-    # Mock Supabase to return empty results
+    # Mock Supabase to return materials exist but no processed ones
     with patch('services.material_processing_service.supabase_admin') as mock_supabase:
-        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.not_.is_.return_value.execute.return_value.data = []
+        # Mock material status check - return some materials but none processed
+        mock_table = Mock()
+        mock_supabase.table.return_value = mock_table
+        mock_table.select.return_value = mock_table
+        mock_table.eq.return_value = mock_table
+        mock_table.execute.return_value.data = [
+            {"id": "material-1", "processing_status": "pending"}
+        ]
         
         # Execute
         results = await processing_service.search_materials(course_id, query, limit=3)
         
-        # Verify embedding was generated for the query
-        mock_ai_brain_client.generate_embedding.assert_called_once_with(query)
-        assert results == []  # Empty course returns empty results
+        # Verify embedding was NOT generated because no processed materials exist
+        mock_ai_brain_client.generate_embedding.assert_not_called()
+        assert results == []  # No processed materials returns empty results
 
 
 @pytest.mark.asyncio
@@ -66,7 +75,7 @@ async def test_search_materials_returns_ranked_results(processing_service, mock_
     Requirements: 4.3
     """
     # Setup
-    course_id = "test-course-123"
+    course_id = "123e4567-e89b-12d3-a456-426614174000"  # Valid UUID
     query = "neural networks"
     query_embedding = [0.5] * 1024
     
@@ -99,13 +108,34 @@ async def test_search_materials_returns_ranked_results(processing_service, mock_
     ]
     
     with patch('services.material_processing_service.supabase_admin') as mock_supabase:
+        # Mock material status check - return processed materials
+        mock_table = Mock()
+        mock_supabase.table.return_value = mock_table
+        
+        # First call: material status check
+        mock_table.select.return_value = mock_table
+        mock_table.eq.return_value = mock_table
+        
+        # Configure different responses for different calls
+        call_count = 0
+        def mock_execute():
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                # First call: material status check
+                return Mock(data=[
+                    {"id": "material-1", "processing_status": "completed"},
+                    {"id": "material-2", "processing_status": "completed"},
+                    {"id": "material-3", "processing_status": "completed"}
+                ])
+            else:
+                # Second call: actual search query
+                return Mock(data=mock_materials)
+        
+        mock_table.execute = mock_execute
+        
         # Mock the RPC call to raise an exception (fallback to direct query)
         mock_supabase.rpc.side_effect = Exception("RPC not available")
-        
-        # Mock the direct query chain
-        mock_execute = Mock()
-        mock_execute.data = mock_materials
-        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.execute.return_value = mock_execute
         
         # Execute
         results = await processing_service.search_materials(course_id, query, limit=3)

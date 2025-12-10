@@ -786,7 +786,12 @@ export default function Dashboard() {
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden relative transition-all duration-300 ease-in-out">
-          <Header />
+          <Header 
+            courseName={activeCourse?.name}
+            courseColor={activeCourse?.color}
+            uploadedFiles={uploadedFiles}
+            onMaterialsClick={activeCourse ? () => setIsMaterialsModalOpen(true) : undefined}
+          />
           {isLoadingCourses ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
@@ -823,7 +828,6 @@ export default function Dashboard() {
               onSendMessage={handleSendMessage}
               onFileUpload={handleFileUpload}
               onRemovePendingFile={handleRemovePendingFile}
-              onMaterialsClick={() => setIsMaterialsModalOpen(true)}
               isLoadingResponse={isLoadingResponse}
               isLoadingChatHistory={isLoadingChatHistory}
               isLoadingMaterials={isLoadingMaterials}

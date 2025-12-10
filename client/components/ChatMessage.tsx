@@ -59,7 +59,7 @@ export default function ChatMessage({
 
         {isAI ? (
           /* AI Message: Render Markdown + Math + Tables */
-          <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+          <div className="prose prose-base dark:prose-invert max-w-none break-words">
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkMath]} // Added remarkMath
               rehypePlugins={[rehypeKatex]}           // Added rehypeKatex

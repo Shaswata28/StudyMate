@@ -2,8 +2,8 @@
 AI Brain Service - Local AI Model Orchestration
 
 This FastAPI service manages multiple specialized AI models:
-- Qwen 2.5 1.5B: Primary text generation (persistent in VRAM)
-- DeepSeek OCR: Vision/OCR processing (load on demand)
+- StudyMate (Qwen 2.5 Fine-tuned): Primary text generation (persistent in VRAM)
+- qwen 2.5vl: Vision/OCR processing (load on demand)
 - mxbai-embed-large: Text embeddings (load on demand)
 """
 
@@ -39,9 +39,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Model configuration
-CORE_MODEL = "qwen2.5:3b"
-VISION_MODEL = "qwen2.5vl:3b"
+# --- CONFIGURATION CHANGES ---
+CORE_MODEL = "studymate"        # Your fine-tuned model
+VISION_MODEL = "qwen2.5vl:3b"   # Your vision model
 EMBEDDING_MODEL = "mxbai-embed-large"
 
 
@@ -56,13 +56,6 @@ def is_pdf(file: UploadFile) -> bool:
 async def process_pdf_with_ocr(pdf_content: bytes, prompt: str) -> str:
     """
     Process PDF by converting pages to images and running OCR on each page.
-    
-    Args:
-        pdf_content: PDF file content as bytes
-        prompt: User prompt for context
-        
-    Returns:
-        Combined extracted text from all pages
     """
     try:
         logger.info("Processing PDF document...")
@@ -74,34 +67,51 @@ async def process_pdf_with_ocr(pdf_content: bytes, prompt: str) -> str:
         
         all_text = []
         
-        # Process each page
+        # Process each page with progress tracking
         for page_num in range(total_pages):
-            logger.info(f"Processing page {page_num + 1}/{total_pages}")
-            
-            # Get page
-            page = pdf_document[page_num]
-            
-            # Convert page to image (PNG format, 300 DPI for good quality)
-            pix = page.get_pixmap(matrix=fitz.Matrix(300/72, 300/72))
-            img_bytes = pix.tobytes("png")
-            
-            # Process with DeepSeek OCR
-            response = ollama.generate(
-                model=VISION_MODEL,
-                prompt=f"{prompt}\n\nPage {page_num + 1} of {total_pages}:",
-                images=[img_bytes],
-                keep_alive=0
-            )
-            
-            page_text = response['response']
-            all_text.append(f"--- Page {page_num + 1} ---\n{page_text}")
-            logger.info(f"Page {page_num + 1}: Extracted {len(page_text)} characters")
+            try:
+                logger.info(f"Processing page {page_num + 1}/{total_pages} - Starting OCR...")
+                
+                # Get page
+                page = pdf_document[page_num]
+                
+                # Convert page to image (PNG format, 300 DPI for good quality)
+                pix = page.get_pixmap(matrix=fitz.Matrix(300/72, 300/72))
+                img_bytes = pix.tobytes("png")
+                
+                logger.info(f"Page {page_num + 1}: Image converted, sending to vision model...")
+                
+                # Process with DeepSeek OCR - this is the slow part
+                response = ollama.generate(
+                    model=VISION_MODEL,
+                    prompt=f"{prompt}\n\nPage {page_num + 1} of {total_pages}:",
+                    images=[img_bytes],
+                    keep_alive=0
+                )
+                
+                page_text = response['response']
+                all_text.append(f"--- Page {page_num + 1} ---\n{page_text}")
+                
+                # Progress update
+                progress_percent = ((page_num + 1) / total_pages) * 100
+                logger.info(f"Page {page_num + 1}/{total_pages} complete: {len(page_text)} characters extracted ({progress_percent:.1f}% done)")
+                
+            except Exception as page_error:
+                logger.error(f"Error processing page {page_num + 1}: {page_error}")
+                # Continue with other pages instead of failing completely
+                all_text.append(f"--- Page {page_num + 1} ---\n[Error processing this page: {str(page_error)}]")
+                continue
         
         pdf_document.close()
         
         # Combine all pages
         combined_text = "\n\n".join(all_text)
-        logger.info(f"PDF processing complete: {len(combined_text)} total characters from {total_pages} pages")
+        
+        # Final summary
+        successful_pages = len([text for text in all_text if not text.startswith("[Error")])
+        logger.info(f"🎉 PDF processing complete!")
+        logger.info(f"📊 Successfully processed {successful_pages}/{total_pages} pages")
+        logger.info(f"📝 Total extracted text: {len(combined_text)} characters")
         
         return combined_text
         
@@ -113,10 +123,7 @@ async def process_pdf_with_ocr(pdf_content: bytes, prompt: str) -> str:
 def cleanup_temporary_resources(model_name: Optional[str] = None):
     """
     Unload specialist models and clear VRAM.
-    Never unloads the core Qwen 2.5 1.5B model.
-    
-    Args:
-        model_name: Specific model to unload (optional)
+    Never unloads the core StudyMate model.
     """
     if model_name and model_name == CORE_MODEL:
         logger.warning(f"Attempted to unload core model {CORE_MODEL} - ignoring")
@@ -191,13 +198,6 @@ async def intelligent_router(
 ):
     """
     Intelligent router that handles text and image requests.
-    
-    Args:
-        prompt: Text prompt for the AI
-        image: Optional image file for OCR processing
-    
-    Returns:
-        dict: Response containing generated text and model name
     """
     try:
         logger.info(f"Router request - prompt length: {len(prompt)}, "
@@ -211,8 +211,10 @@ async def intelligent_router(
                 
                 # Check if it's a PDF
                 if is_pdf(image):
-                    logger.info("Detected PDF file - processing with multi-page OCR")
+                    logger.info(f"Detected PDF file: {image.filename} - starting multi-page OCR processing...")
+                    logger.info("⚠️  Large PDFs may take several minutes to process. Please wait...")
                     extracted_text = await process_pdf_with_ocr(file_content, prompt)
+                    logger.info("✅ PDF processing completed successfully!")
                 else:
                     # Regular image processing
                     logger.info(f"Processing image with {VISION_MODEL}")
@@ -241,12 +243,39 @@ async def intelligent_router(
                     "model": VISION_MODEL
                 }
         
-        # Default: Text generation with core model
+        # Generate response with fine-tuned StudyMate model
         logger.info(f"Generating text response with {CORE_MODEL}")
+        
+        # IMPORTANT: StudyMate is fine-tuned on Alpaca format
+        # If the prompt doesn't already contain Alpaca structure, wrap it
+        if "### Instruction:" not in prompt and "### Input:" not in prompt:
+            # This is a raw prompt - wrap it in Alpaca format
+            alpaca_prompt = f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction:
+You are StudyMate, a helpful AI study assistant.
+
+### Input:
+{prompt}
+
+### Response:
+"""
+            logger.info("Wrapped raw prompt in Alpaca format for fine-tuned model")
+        else:
+            # This is already in Alpaca format - use as-is
+            alpaca_prompt = prompt
+            logger.info("Using pre-formatted Alpaca prompt")
+        
         response = ollama.generate(
             model=CORE_MODEL,
-            prompt=prompt,
-            keep_alive=-1  # Keep core model loaded
+            prompt=alpaca_prompt,
+            keep_alive=-1,
+            options={
+                # Minimal stop tokens - let fine-tuned model handle stopping naturally
+                "stop": ["<|endoftext|>", "### Instruction:", "### Input:"],
+                "temperature": 0.7,  # Slightly higher for more natural responses
+                "num_ctx": 4096
+            }
         )
         
         generated_text = response['response']
@@ -266,12 +295,6 @@ async def intelligent_router(
 async def process_embedding(text: str):
     """
     Generate embedding vector for text.
-    
-    Args:
-        text: Text to embed
-    
-    Returns:
-        dict: Embedding vector
     """
     try:
         logger.info(f"Generating embedding for text length: {len(text)}")
@@ -298,4 +321,12 @@ async def process_embedding(text: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001, log_level="info")
+    # Configure uvicorn with longer timeout for large document processing
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=8001, 
+        log_level="info",
+        timeout_keep_alive=300,  # 5 minutes keep-alive
+        timeout_graceful_shutdown=30
+    )

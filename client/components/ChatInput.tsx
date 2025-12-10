@@ -234,7 +234,19 @@ export default function ChatInput({ onSend, onFileUpload, isLoading = false }: C
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
-        onFileUpload?.(Array.from(e.target.files));
+        const files = Array.from(e.target.files);
+        
+        // Check for large PDFs and show warning
+        const largePDFs = files.filter(file => 
+          (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) && 
+          file.size > 5 * 1024 * 1024 // 5MB
+        );
+        
+        if (largePDFs.length > 0) {
+          console.log('⚠️ Large PDF detected. Processing may take several minutes...');
+        }
+        
+        onFileUpload?.(files);
         e.target.value = "";
     }
   };

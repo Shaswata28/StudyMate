@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "./ThemeProvider";
 
 type TabType = "settings" | "about" | "help";
 
@@ -13,6 +14,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("settings");
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(0);
   const { user } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
 
   if (!isOpen) return null;
 
@@ -217,6 +219,41 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                       Private profile
                     </span>
                   </label>
+                </div>
+              </div>
+
+              {/* Appearance Settings */}
+              <div>
+                <h3 className="font-audiowide text-[16px] tracking-[1.6px] text-black dark:text-white mb-4">
+                  Appearance
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-audiowide text-[13px] tracking-[1.3px] text-black dark:text-white">
+                      Theme
+                    </span>
+                    <button
+                      onClick={toggleTheme}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors btn-micro"
+                      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                    >
+                      {isDark ? (
+                        <>
+                          <Sun className="w-4 h-4 text-yellow-500" strokeWidth={2} />
+                          <span className="font-audiowide text-[12px] tracking-[1.2px] text-black dark:text-white">
+                            Light
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="w-4 h-4 text-slate-700" strokeWidth={2} />
+                          <span className="font-audiowide text-[12px] tracking-[1.2px] text-black dark:text-white">
+                            Dark
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 

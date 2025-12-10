@@ -164,7 +164,7 @@ class Orchestrator:
             except Exception as e:
                 logger.error(f"Orchestrator: RAG search failed: {e}")
 
-        # --- STAGE 3: PROMPT ENGINEERING ---
+        # --- STAGE 3: PROMPT ENGINEERING (FIXED) ---
         # 1. Build the Persona (Behavioral Instructions)
         pref_dict = user_context.preferences.model_dump() if user_context.has_preferences else None
         system_persona = self.build_persona_prompt(pref_dict)
@@ -176,12 +176,21 @@ class Orchestrator:
             material_context=material_context_str
         )
 
-        # 3. Combine into the Final "Mega Prompt"
-        final_prompt = (
-            f"{system_persona}\n"
-            f"==================================================\n"
-            f"{data_context}"
-        )
+        # --- CRITICAL FIX: Use Alpaca Format ---
+        # We put the Persona + Context into the 'Instruction' block
+        # and the User Message into the 'Input' block.
+        full_instruction = f"{system_persona}\n\nCONTEXT DATA:\n{data_context}"
+
+        final_prompt = f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction:
+{full_instruction}
+
+### Input:
+{user_message}
+
+### Response:
+"""
         
         # --- STAGE 4: SYNTHESIS ---
         response_text = await local_ai_service.generate_response(

@@ -43,7 +43,7 @@ class LocalAIService:
             brain_url: URL of the brain service (default: http://localhost:8001)
         """
         self.brain_url = brain_url
-        self.client = httpx.AsyncClient(timeout=60.0)
+        self.client = httpx.AsyncClient(timeout=300.0)  # 5 minutes for large document processing
         logger.info(f"Local AI service initialized with brain URL: {self.brain_url}")
     
     async def __aenter__(self):

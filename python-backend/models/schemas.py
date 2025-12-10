@@ -3,7 +3,7 @@ Pydantic schemas for request/response validation.
 """
 
 from pydantic import BaseModel, Field, field_validator, EmailStr
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Any
 from datetime import datetime
 from constants import (
     VALID_GRADES,
@@ -281,3 +281,45 @@ class UserContext(BaseModel):
     has_preferences: bool = False
     has_academic: bool = False
     has_history: bool = False
+
+
+# RAG Operation Schemas
+
+class RAGOperationResult(BaseModel):
+    """
+    Result of a RAG operation with detailed status.
+    Used for tracking and debugging RAG pipeline operations.
+    """
+    success: bool = Field(..., description="Whether the operation succeeded")
+    operation: str = Field(..., description="Operation type (e.g., 'material_search', 'chat_history', 'context_format')")
+    data: Optional[Any] = Field(None, description="Operation result data")
+    error_message: Optional[str] = Field(None, description="Error message if operation failed")
+    execution_time: float = Field(..., ge=0, description="Operation execution time in seconds")
+    timestamp: str = Field(..., description="ISO timestamp when operation completed")
+
+
+class EnhancedMaterialSearchResult(BaseModel):
+    """
+    Enhanced search result with additional metadata for better RAG operations.
+    Extends MaterialSearchResult with processing and debugging information.
+    """
+    material_id: str = Field(..., description="Material UUID")
+    name: str = Field(..., description="Material filename")
+    excerpt: str = Field(..., description="Relevant text excerpt")
+    similarity_score: float = Field(..., ge=0, le=1, description="Similarity score (0-1, higher is more relevant)")
+    file_type: str = Field(..., description="MIME type")
+    processing_status: str = Field(..., description="Material processing status (pending, processing, completed, failed)")
+    processed_at: Optional[str] = Field(None, description="ISO timestamp when material was processed")
+    excerpt_length: int = Field(..., ge=0, description="Length of excerpt in characters (for prompt optimization)")
+
+
+class RAGContext(BaseModel):
+    """
+    Complete RAG context with operation results.
+    Tracks the entire RAG pipeline execution for debugging and monitoring.
+    """
+    user_context: UserContext = Field(..., description="Base user context (preferences, academic, history)")
+    material_search_result: RAGOperationResult = Field(..., description="Result of material search operation")
+    chat_history_result: RAGOperationResult = Field(..., description="Result of chat history retrieval operation")
+    prompt_format_result: RAGOperationResult = Field(..., description="Result of prompt formatting operation")
+    total_execution_time: float = Field(..., ge=0, description="Total RAG pipeline execution time in seconds")
