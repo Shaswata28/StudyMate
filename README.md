@@ -121,7 +121,7 @@ studymate/
 
 | Model | Purpose | Size |
 |-------|---------|------|
-| StudyMate-core | Main chat model (fine-tuned) | ~4GB |
+| StudyMate-core | Main chat model (fine-tuned) | ~1.8GB |
 | qwen2.5vl:3b | Vision/OCR for PDFs & images | ~2GB |
 | mxbai-embed-large | Text embeddings for RAG | ~670MB |
 
