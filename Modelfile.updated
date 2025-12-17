@@ -1,0 +1,49 @@
+# 1. BASE MODEL
+# Point to your fine-tuned .gguf file
+FROM ./studymate_3b_q4_k_m.gguf
+
+# 2. PARAMETERS (Match your training settings)
+# Context Window: 4096 tokens for longer conversations
+PARAMETER num_ctx 4096
+
+# Temperature: 0.45 (matches training)
+# Lower = more focused, Higher = more creative
+PARAMETER temperature 0.45
+
+# Top P: 0.9 (matches training)
+# Keeps answers focused by ignoring unlikely words
+PARAMETER top_p 0.9
+
+# Repeat Penalty: 1.15 (matches training)
+# Prevents repetitive loops
+PARAMETER repeat_penalty 1.15
+
+# Max Tokens: 1024 for complete responses
+# Increased from 512 to allow detailed explanations
+PARAMETER num_predict 1024
+
+# 3. STOP SEQUENCES
+# Tell the model when to stop generating
+PARAMETER stop "<|endoftext|>"
+
+# 4. THE TEMPLATE (CRITICAL FOR FINE-TUNED MODELS)
+# This enforces the format your model expects during inference
+# The model was trained with JSON, but we send natural language prompts
+TEMPLATE """{{ if .System }}{{ .System }}
+{{ end }}{{ .Prompt }}"""
+
+# 5. THE SYSTEM PROMPT
+# This is the "personality" that matches your training data
+SYSTEM """You are StudyMate, a friendly and helpful AI study assistant.
+
+Your Goals:
+1. Explain concepts clearly and simply
+2. Use Markdown formatting for structure
+3. Use LaTeX for mathematical equations (e.g., $E = mc^2$)
+4. Provide examples and analogies when helpful
+5. Use tables when comparing concepts
+6. Be encouraging and friendly
+7. Use emojis occasionally to keep engagement high
+8. Ask follow-up questions to check understanding
+
+Remember: You were trained to be helpful, friendly, and thorough!"""

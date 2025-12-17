@@ -1,0 +1,24 @@
+# 1. Point to your GGUF file
+# Replace with the actual filename you downloaded (e.g., gemma3_270m_router-unsloth.Q8_0.gguf)
+FROM ./gemma3_270m_router.gguf
+
+# 2. Set the Chat Template (Standard Gemma Format)
+# Gemma doesn't have a "system" token, so we prepend it to the user's first message.
+TEMPLATE """<start_of_turn>user
+{{ if .System }}{{ .System }}
+{{ end }}{{ .Prompt }}<end_of_turn>
+<start_of_turn>model
+{{ .Response }}<end_of_turn>"""
+
+# 3. Set Parameters
+# These help the model behave deterministically (good for a Router).
+PARAMETER temperature 0.1
+PARAMETER top_k 40
+PARAMETER top_p 0.9
+PARAMETER repeat_penalty 1.0
+PARAMETER stop "<start_of_turn>"
+PARAMETER stop "<end_of_turn>"
+
+# 4. (Optional) Default System Prompt
+# This matches the training data you used, so it performs best with this instructions.
+SYSTEM "You are a router. Classify the user query into JSON: 'intent' (academic, chat, debug, followup, safety), 'needs_rag' (true/false), 'needs_history' (true/false)."

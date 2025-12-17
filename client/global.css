@@ -187,3 +187,316 @@
     @apply animate-in fade-in slide-in-from-bottom-2 duration-300;
   }
 }
+
+/* ============================================================================
+   MATH & EQUATION STYLING (KaTeX)
+   ============================================================================ */
+
+/* Math content container */
+.math-content {
+  /* Ensure proper font rendering for math */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Display math (block equations) */
+.math-content .katex-display {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(254, 174, 1, 0.05) 0%, rgba(254, 174, 1, 0.02) 100%);
+  border-left: 3px solid var(--studymate-orange);
+  border-radius: 0 0.5rem 0.5rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.dark .math-content .katex-display {
+  background: linear-gradient(135deg, rgba(255, 201, 51, 0.08) 0%, rgba(255, 201, 51, 0.03) 100%);
+}
+
+/* Inline math */
+.math-content .katex {
+  font-size: 1.05em;
+  color: inherit;
+}
+
+/* Math display scrollbar */
+.math-content .katex-display::-webkit-scrollbar {
+  height: 4px;
+}
+
+.math-content .katex-display::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.math-content .katex-display::-webkit-scrollbar-thumb {
+  background: var(--studymate-orange);
+  border-radius: 2px;
+  opacity: 0.5;
+}
+
+/* Equation numbering */
+.math-content .katex-display > .katex > .katex-html {
+  display: flex;
+  justify-content: center;
+}
+
+/* Fix KaTeX font sizing */
+.math-content .katex .base {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+/* ============================================================================
+   CODE BLOCK ENHANCEMENTS
+   ============================================================================ */
+
+/* Code block container */
+.math-content pre {
+  margin: 0.75rem 0 !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden;
+}
+
+/* Inline code styling */
+.math-content code:not([class*="language-"]) {
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+  font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+  background-color: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #d63384;
+}
+
+.dark .math-content code:not([class*="language-"]) {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #f8a4c4;
+}
+
+/* ============================================================================
+   ASCII ART & DIAGRAM STYLING
+   ============================================================================ */
+
+/* ASCII art blocks */
+.math-content pre:has(code:not([class*="language-"])),
+.math-content pre code:not([class*="language-"]) {
+  font-family: 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+  line-height: 1.4;
+  letter-spacing: 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* Preserve ASCII art spacing */
+.math-content pre {
+  tab-size: 4;
+  -moz-tab-size: 4;
+}
+
+/* ============================================================================
+   LIST STYLING ENHANCEMENTS
+   ============================================================================ */
+
+/* Nested list indentation */
+.math-content ul ul,
+.math-content ol ol,
+.math-content ul ol,
+.math-content ol ul {
+  margin-left: 1.25rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+/* List item spacing */
+.math-content li {
+  margin-bottom: 0.25rem;
+}
+
+.math-content li:last-child {
+  margin-bottom: 0;
+}
+
+/* Task list styling */
+.math-content li input[type="checkbox"] {
+  margin-right: 0.5rem;
+  accent-color: var(--studymate-orange);
+}
+
+/* Definition list styling */
+.math-content dl {
+  margin: 1rem 0;
+}
+
+.math-content dt {
+  font-weight: 600;
+  color: var(--studymate-orange);
+  margin-top: 0.75rem;
+}
+
+.math-content dd {
+  margin-left: 1.5rem;
+  margin-top: 0.25rem;
+  color: hsl(var(--foreground) / 0.85);
+}
+
+/* ============================================================================
+   TABLE ENHANCEMENTS - ChatGPT Style
+   ============================================================================ */
+
+.math-content table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.dark .math-content table {
+  border-color: #374151;
+}
+
+.math-content thead {
+  background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
+}
+
+.dark .math-content thead {
+  background: linear-gradient(to bottom, #1f2937, #111827);
+}
+
+.math-content th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.dark .math-content th {
+  color: #9ca3af;
+  border-bottom-color: #374151;
+}
+
+.math-content td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+
+.dark .math-content td {
+  border-bottom-color: #1f2937;
+  color: #d1d5db;
+}
+
+.math-content tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.math-content tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.dark .math-content tbody tr:hover {
+  background-color: rgba(55, 65, 81, 0.3);
+}
+
+/* Alternating row colors (optional - uncomment if desired) */
+/*
+.math-content tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.dark .math-content tbody tr:nth-child(even) {
+  background-color: rgba(31, 41, 55, 0.5);
+}
+*/
+
+/* First column styling for labels */
+.math-content td:first-child {
+  font-weight: 500;
+  color: #111827;
+}
+
+.dark .math-content td:first-child {
+  color: #f3f4f6;
+}
+
+/* Numeric columns alignment */
+.math-content td:has(> :only-child:is([data-type="number"])) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+
+
+/* ============================================================================
+   BLOCKQUOTE STYLING
+   ============================================================================ */
+
+.math-content blockquote {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--studymate-orange);
+  background: linear-gradient(90deg, rgba(254, 174, 1, 0.08) 0%, transparent 100%);
+  border-radius: 0 0.5rem 0.5rem 0;
+  font-style: italic;
+}
+
+.math-content blockquote p {
+  margin: 0;
+}
+
+/* Nested blockquotes */
+.math-content blockquote blockquote {
+  margin-top: 0.5rem;
+  border-left-color: hsl(var(--muted-foreground));
+}
+
+/* ============================================================================
+   HORIZONTAL RULE
+   ============================================================================ */
+
+.math-content hr {
+  margin: 1.5rem 0;
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
+}
+
+/* ============================================================================
+   SPECIAL CONTENT INDICATORS
+   ============================================================================ */
+
+/* Warning/Note boxes (if using special syntax) */
+.math-content .warning,
+.math-content .note,
+.math-content .tip {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.math-content .warning {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-left: 4px solid #ef4444;
+}
+
+.math-content .note {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 4px solid #3b82f6;
+}
+
+.math-content .tip {
+  background-color: rgba(34, 197, 94, 0.1);
+  border-left: 4px solid #22c55e;
+}

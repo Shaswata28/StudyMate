@@ -14,7 +14,7 @@ const Index = lazy(() => import("./pages/Index"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
-const TermsAndConditions = lazy(() => import("./pages/TermsandConditions"));
+const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Questions = lazy(() => import("./pages/Questions"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));

@@ -1,12 +1,19 @@
 import { useEffect, useRef } from "react";
 import ChatMessage from "./ChatMessage";
 
+interface TestAccuracyInfo {
+  is_test_question: boolean;
+  accuracy: number;
+  expected_response?: string;
+}
+
 interface Message {
   id: string;
   text: string;
   isAI: boolean;
   timestamp?: Date;
   attachments?: { name: string; type: string }[];
+  testAccuracy?: TestAccuracyInfo;
 }
 
 interface ChatContainerProps {
@@ -45,7 +52,7 @@ export default function ChatContainer({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col gap-4 smooth-scroll overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-studymate-darkgray dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-studymate-black dark:hover:scrollbar-thumb-gray-500"
+      className="flex flex-col gap-3 md:gap-4 smooth-scroll overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-studymate-darkgray dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-studymate-black dark:hover:scrollbar-thumb-gray-500 pr-2"
     >
       {messages.map((message) => (
         <ChatMessage
@@ -55,6 +62,7 @@ export default function ChatContainer({
           isAI={message.isAI}
           timestamp={message.timestamp}
           attachments={message.attachments}
+          testAccuracy={message.testAccuracy}
         />
       ))}
 

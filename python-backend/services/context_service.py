@@ -1,5 +1,6 @@
 """
 Context service for retrieving and formatting user context for AI chat.
+Builds prompts matching the exact training format of the fine-tuned model.
 """
 from typing import Optional, List
 from supabase import Client
@@ -16,12 +17,19 @@ from services.supabase_client import get_user_client
 
 logger = logging.getLogger(__name__)
 
+
 class ContextService:
+    """
+    Service for building context that matches the core model's training format.
     
-    # ... (Keep get_preferences, get_academic_info, get_chat_history, get_user_context as they were) ...
-    # Those retrieval methods don't affect formatting, only data fetching.
+    Training format:
+    - System: "You are StudyMate. \n[PROFILE]\n- Subject: X\n- grade: Y\n\n[COURSE MATERIALS]\nSource 1: ..."
+    - User: "question"
+    - Assistant: "response"
+    """
 
     async def get_preferences(self, user_id: str, client: Client) -> Optional[UserPreferences]:
+        """Retrieve user preferences from database."""
         try:
             result = client.table("personalized").select("prefs").eq("id", user_id).single().execute()
             if result.data and result.data.get("prefs"):
@@ -31,6 +39,7 @@ class ContextService:
             return None
     
     async def get_academic_info(self, user_id: str, client: Client) -> Optional[AcademicInfo]:
+        """Retrieve academic info from database."""
         try:
             result = client.table("academic").select("grade, semester_type, semester, subject").eq("id", user_id).single().execute()
             if result.data:
@@ -40,61 +49,38 @@ class ContextService:
             return None
     
     async def get_chat_history(self, course_id: str, client: Client, limit: int = 10) -> List[Message]:
-        """
-        FIXED: Retrieve recent chat history with proper error handling.
-        
-        Improvements:
-        - Better error handling and logging
-        - Proper message ordering and limiting
-        - Graceful degradation on failures
-        """
+        """Retrieve recent chat history."""
         try:
             logger.info(f"Retrieving chat history for course {course_id}, limit: {limit}")
             
-            # Get chat history ordered by creation time (most recent first for limiting)
             result = client.table("chat_history").select("history, created_at").eq("course_id", course_id).order("created_at", desc=True).execute()
             
             all_messages = []
             if result.data:
-                logger.debug(f"Found {len(result.data)} chat history records")
-                
-                # Process records in reverse chronological order to get most recent messages first
                 for row in result.data:
                     history_array = row.get("history", [])
                     if not isinstance(history_array, list):
-                        logger.warning(f"Invalid history format in record: {type(history_array)}")
                         continue
                     
-                    # Process messages in this record
                     for msg_data in history_array:
                         try:
                             if not isinstance(msg_data, dict):
-                                logger.warning(f"Invalid message format: {type(msg_data)}")
                                 continue
-                            
-                            # Validate required fields
                             if "role" not in msg_data or "content" not in msg_data:
-                                logger.warning(f"Message missing required fields: {msg_data.keys()}")
                                 continue
                             
                             message = Message(**msg_data)
                             all_messages.append(message)
                             
-                            # Stop if we've reached the limit
                             if len(all_messages) >= limit:
                                 break
-                                
-                        except Exception as e:
-                            logger.warning(f"Failed to parse message: {e}")
+                        except Exception:
                             continue
                     
-                    # Stop if we've reached the limit
                     if len(all_messages) >= limit:
                         break
             
-            # Reverse to get chronological order (oldest first)
             all_messages.reverse()
-            
             logger.info(f"Retrieved {len(all_messages)} messages from chat history")
             return all_messages
             
@@ -103,6 +89,7 @@ class ContextService:
             return []
     
     async def get_user_context(self, user_id: str, course_id: str, access_token: str, timeout: float = 2.0) -> UserContext:
+        """Retrieve all user context in parallel."""
         try:
             client = get_user_client(access_token)
             prefs, academic, history = await asyncio.gather(
@@ -112,7 +99,6 @@ class ContextService:
                 return_exceptions=True
             )
             
-            # Clean up exceptions
             if isinstance(prefs, Exception): prefs = None
             if isinstance(academic, Exception): academic = None
             if isinstance(history, Exception): history = []
@@ -128,84 +114,114 @@ class ContextService:
         except Exception:
             return UserContext()
 
-    def format_context_prompt(
+    async def build_simple_context(
         self,
-        context: UserContext,
+        user_id: str,
         user_message: str,
-        material_context: Optional[str] = None
-    ) -> str:
+        access_token: str
+    ) -> List[dict]:
         """
-        Format context prompt in proper Alpaca format for fine-tuned StudyMate model.
+        Build simple ChatML context for global chat (no course/RAG).
+        Matches training format exactly.
         
-        The fine-tuned model expects strict Alpaca format:
-        ### Instruction: (what to do)
-        ### Input: (context + question)
-        ### Response: (where model generates)
+        Training format:
+        System: "You are StudyMate. \n[PROFILE]\n- Subject: General\n- grade: Bachelor\n\n[COURSE MATERIALS]\nNone"
         """
-        logger.debug("Formatting Alpaca context prompt for fine-tuned StudyMate model")
+        messages = []
+        client = get_user_client(access_token)
         
-        # Build the instruction
-        instruction_parts = ["You are StudyMate, a helpful AI study assistant."]
+        # Get academic info for profile
+        academic = await self.get_academic_info(user_id, client)
+        subject = academic.subject[0] if academic and academic.subject else "General"
+        grade = academic.grade[0] if academic and academic.grade else "Bachelor"
         
-        # Add learning preferences to instruction if available
-        if context.has_preferences and context.preferences:
-            p = context.preferences
-            instruction_parts.append(f"Adapt your response to the student's learning preferences: {p.learning_pace} pace, {p.prior_experience} experience level.")
+        # Build system prompt (EXACT training format)
+        system_content = f"You are StudyMate. \n[PROFILE]\n- Subject: {subject}\n- grade: {grade}\n\n[COURSE MATERIALS]\nNone"
         
-        instruction = " ".join(instruction_parts)
+        messages.append({
+            "role": "system",
+            "content": system_content
+        })
         
-        # Build the input section with all context
-        input_parts = []
+        messages.append({
+            "role": "user",
+            "content": user_message
+        })
         
-        # 1. Course Materials (highest priority)
-        if material_context and material_context.strip():
-            input_parts.append("Course Materials:")
-            input_parts.append(material_context.strip())
-            input_parts.append("")
-            logger.debug("Added material context to Alpaca input")
-        
-        # 2. Academic Context
-        if context.has_academic and context.academic:
-            academic_info = []
-            if context.academic.grade:
-                academic_info.append(f"Grade Level: {', '.join(context.academic.grade)}")
-            if context.academic.semester_type and context.academic.semester:
-                academic_info.append(f"Semester: {context.academic.semester} ({context.academic.semester_type} system)")
-            if context.academic.subject:
-                academic_info.append(f"Subjects: {', '.join(context.academic.subject)}")
-            
-            if academic_info:
-                input_parts.append("Student Academic Context:")
-                input_parts.extend(academic_info)
-                input_parts.append("")
-                logger.debug("Added academic context to Alpaca input")
-        
-        # 3. Recent Conversation History
-        if context.has_history and context.chat_history:
-            recent_messages = context.chat_history[-3:] if len(context.chat_history) > 3 else context.chat_history
-            if recent_messages:
-                input_parts.append("Recent Conversation:")
-                for msg in recent_messages:
-                    role_display = "Student" if msg.role == "user" else "StudyMate"
-                    content = msg.content[:150] + "..." if len(msg.content) > 150 else msg.content
-                    input_parts.append(f"{role_display}: {content}")
-                input_parts.append("")
-                logger.debug(f"Added {len(recent_messages)} messages to Alpaca input")
-        
-        # 4. Current Question
-        input_parts.append(f"Student Question: {user_message}")
-        
-        # Combine into proper Alpaca format
-        alpaca_prompt = f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+        logger.info(f"Built simple context: {len(messages)} messages")
+        return messages
 
-### Instruction:
-{instruction}
-
-### Input:
-{chr(10).join(input_parts)}
-
-### Response:
-"""
+    async def build_rag_context(
+        self,
+        user_id: str,
+        course_id: str,
+        user_message: str,
+        access_token: str,
+        search_results: Optional[List[dict]] = None
+    ) -> List[dict]:
+        """
+        Build ChatML context with RAG for course-specific chat.
+        Matches training format exactly. No chat history to avoid hallucinations.
         
-        logger.info(f"Generated Alpaca context prompt with {len(alpaca_prompt)} characters")
-        return alpaca_prompt
+        Training format with RAG:
+        System: "You are StudyMate. \n[PROFILE]\n- Subject: X\n- grade: Y\n\n[COURSE MATERIALS]\nSource 1: ..."
+        """
+        messages = []
+        client = get_user_client(access_token)
+        
+        # Get academic info for profile
+        academic = await self.get_academic_info(user_id, client)
+        subject = academic.subject[0] if academic and academic.subject else "General"
+        grade = academic.grade[0] if academic and academic.grade else "Bachelor"
+        
+        # Build course materials section
+        if search_results and len(search_results) > 0:
+            materials_parts = []
+            for idx, result in enumerate(search_results[:3], 1):
+                excerpt = result.get('excerpt', '')
+                if len(excerpt) > 500:
+                    excerpt = excerpt[:500]
+                materials_parts.append(f"Source {idx}: {excerpt}")
+            materials_content = "\n".join(materials_parts)
+        else:
+            materials_content = "None"
+        
+        # Build system prompt (EXACT training format)
+        system_content = f"You are StudyMate. \n[PROFILE]\n- Subject: {subject}\n- grade: {grade}\n\n[COURSE MATERIALS]\n{materials_content}"
+        
+        messages.append({
+            "role": "system",
+            "content": system_content
+        })
+        
+        # No chat history - causes hallucinations
+        
+        # Add current user query
+        messages.append({
+            "role": "user",
+            "content": user_message
+        })
+        
+        logger.info(f"Built RAG context: {len(messages)} messages, materials: {len(search_results) if search_results else 0}")
+        return messages
+
+    # Keep old method for backward compatibility
+    async def build_core_model_context(
+        self,
+        user_id: str,
+        course_id: str,
+        user_message: str,
+        access_token: str,
+        intent: dict,
+        search_results: Optional[List[dict]] = None
+    ) -> List[dict]:
+        """
+        Backward compatible method - delegates to build_rag_context.
+        """
+        return await self.build_rag_context(
+            user_id=user_id,
+            course_id=course_id,
+            user_message=user_message,
+            access_token=access_token,
+            search_results=search_results
+        )

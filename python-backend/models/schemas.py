@@ -54,12 +54,22 @@ class ChatRequest(BaseModel):
     attachments: Optional[List[FileAttachment]] = Field(default_factory=list, max_length=5)
 
 
+class TestAccuracyInfo(BaseModel):
+    """
+    Schema for test accuracy information when question matches test dataset.
+    """
+    is_test_question: bool = Field(..., description="Whether this question matched a test dataset entry")
+    accuracy: float = Field(..., ge=0, le=100, description="Accuracy percentage (0-100)")
+    expected_response: Optional[str] = Field(None, description="Expected response from test dataset (truncated)")
+
+
 class ChatResponse(BaseModel):
     """
     Response schema for successful chat requests.
     """
     response: str
     timestamp: str
+    test_accuracy: Optional[TestAccuracyInfo] = Field(None, description="Accuracy info if question matches test dataset")
 
 
 class ErrorResponse(BaseModel):

@@ -53,7 +53,7 @@ export default function Workspace({
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-950">
       {/* Main Content Area - Messages and Files */}
-      <div className="flex-1 overflow-hidden flex flex-col px-4 md:px-8 lg:px-12 py-6 md:py-8">
+      <div className="flex-1 overflow-hidden flex flex-col px-4 md:px-6 lg:px-8 py-4 md:py-6">
         {/* Loading State for Chat History */}
         {isLoadingChatHistory && messages.length === 0 && (
           <div className="flex-1 flex items-center justify-center">
@@ -92,7 +92,7 @@ export default function Workspace({
       </div>
 
       {/* Chat Input Section */}
-      <div className="border-t border-black/10 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 md:px-8 lg:px-12 py-6 md:py-8 flex-shrink-0">
+      <div className="border-t border-black/10 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 md:px-6 lg:px-8 py-4 md:py-5 flex-shrink-0">
         {/* Pending Files Display - Above Chat Input (only show before sending) */}
         {pendingFiles.length > 0 && (
           <div className="flex flex-wrap gap-3 w-full mb-4 max-w-[609px] mx-auto">

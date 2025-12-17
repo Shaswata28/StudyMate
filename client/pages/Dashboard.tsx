@@ -29,12 +29,19 @@ interface UploadedFile {
   file?: File; // Store the actual File object for sending to API
 }
 
+interface TestAccuracyInfo {
+  is_test_question: boolean;
+  accuracy: number;
+  expected_response?: string;
+}
+
 interface Message {
   id: string;
   text: string;
   isAI: boolean;
   timestamp?: Date;
   attachments?: { name: string; type: string }[]; // Files attached to this message
+  testAccuracy?: TestAccuracyInfo;
 }
 
 export default function Dashboard() {
@@ -698,6 +705,7 @@ export default function Dashboard() {
           text: data.response,
           isAI: true,
           timestamp: new Date(),
+          testAccuracy: data.test_accuracy || undefined,
         };
         setMessages((prev) => [...prev, aiResponse]);
 
