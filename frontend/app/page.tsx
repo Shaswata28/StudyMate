@@ -1,6 +1,6 @@
 "use client";
 
-import { version } from "@/package.json";
+import appPackage from "@/package.json";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, AudioLines, BookOpen, CircleHelp, Cpu, FileText, Github, HardDrive } from "lucide-react";
@@ -94,7 +94,7 @@ export default function LandingPage() {
                 {label}
               </Link>
             ))}
-            <span className="ml-auto whitespace-nowrap tabular-nums">v{version}</span>
+            <span className="ml-auto whitespace-nowrap tabular-nums">v{appPackage.version}</span>
           </nav>
         </footer>
       </div>

@@ -45,11 +45,11 @@ jobs:
       - run: python backend/test_practice.py
       - run: python -m PyInstaller --onedir --name StudyMate --add-data frontend/out:web backend/student_launcher.py
       - run: python -c "import subprocess, sys; subprocess.run([sys.executable, 'backend/test_chat.py', 'dist/StudyMate/StudyMate' + ('.exe' if sys.platform == 'win32' else '')], check=True)"
-      - run: python -c "from shutil import copyfile, copytree, make_archive; copyfile('README.md', 'dist/StudyMate/README.md'); copytree('Screenshots', 'dist/StudyMate/Screenshots'); make_archive('StudyMate-${{ matrix.platform }}', '${{ matrix.archive }}', 'dist', 'StudyMate')"
+      - run: python -c "from shutil import copyfile, copytree, make_archive; copyfile('README.md', 'dist/StudyMate/README.md'); copyfile('LICENSE', 'dist/StudyMate/LICENSE'); copytree('Screenshots', 'dist/StudyMate/Screenshots'); make_archive('StudyMate-${{ github.ref_type == 'tag' && github.ref_name || 'snapshot' }}-${{ matrix.platform }}', '${{ matrix.archive }}', 'dist', 'StudyMate')"
       - uses: actions/upload-artifact@v4
         with:
-          name: StudyMate-${{ matrix.platform }}
-          path: StudyMate-${{ matrix.platform }}.*
+          name: StudyMate-${{ github.ref_type == 'tag' && github.ref_name || 'snapshot' }}-${{ matrix.platform }}
+          path: StudyMate-${{ github.ref_type == 'tag' && github.ref_name || 'snapshot' }}-${{ matrix.platform }}.*
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -62,7 +62,7 @@ jobs:
         with:
           path: release
           merge-multiple: true
-      - run: gh release create "$GITHUB_REF_NAME" release/StudyMate-* --draft --verify-tag --generate-notes
+      - run: gh release create "$GITHUB_REF_NAME" release/StudyMate-* --verify-tag --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}

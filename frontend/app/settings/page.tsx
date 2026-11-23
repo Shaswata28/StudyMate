@@ -1,6 +1,6 @@
 "use client";
 
-import { version } from "@/package.json";
+import appPackage from "@/package.json";
 import Link from "next/link";
 import { ArrowLeft, AudioLines, BookOpen, CircleUserRound, ImagePlus, SunMoon, CircleHelp, FileText, Github } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -126,7 +126,7 @@ export default function SettingsPage() {
                 </Link>
               ))}
             </div>
-            <span className="px-3 pt-2 text-xs tabular-nums text-neutral-600 dark:text-neutral-300">v{version}</span>
+            <span className="px-3 pt-2 text-xs tabular-nums text-neutral-600 dark:text-neutral-300">v{appPackage.version}</span>
           </nav>
           <section className="min-w-0 rounded-panel border border-line bg-surface p-5 sm:p-8" aria-labelledby="settings-category">
             <h2 id="settings-category" className="mb-5 font-display text-4xl">{category}</h2>

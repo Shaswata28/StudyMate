@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_app(web_root: Path | None = None) -> FastAPI:
-    app = FastAPI(title="StudyMate Local API", version="1.0.1", lifespan=lifespan)
+    app = FastAPI(title="StudyMate Local API", version="1.0.0", lifespan=lifespan)
 
     @app.middleware("http")
     async def check_local_origin(request: Request, call_next):

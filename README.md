@@ -7,16 +7,23 @@
 <p align="center">An offline-first study workspace for Windows, macOS, and Linux.</p>
 
 <p align="center">
-  <img alt="Version 1.0.1" src="https://img.shields.io/badge/version-1.0.1-356650?style=for-the-badge">
+  <a href="https://github.com/Shaswata28/StudyMate/releases/tag/v1.0.0"><img alt="Download StudyMate" src="https://img.shields.io/badge/download-v1.0.0-356650?style=for-the-badge"></a>
+  <img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-356650?style=for-the-badge">
   <img alt="Local models with Ollama" src="https://img.shields.io/badge/local_models-Ollama-356650?style=for-the-badge">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-356650?style=for-the-badge"></a>
 </p>
 
 <p align="center">
-  <a href="#features">Features</a> ?
-  <a href="#screenshots">Screenshots</a> ?
-  <a href="#student-how-to">Student how-to</a> ?
-  <a href="#student-setup">Student setup</a> ?
+  <img alt="Platform: Windows" src="https://img.shields.io/badge/platform-Windows-356650?style=for-the-badge&amp;logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTEgMWgxMHYxMEgxem0xMiAwaDEwdjEwSDEzek0xIDEzaDEwdjEwSDF6bTEyIDBoMTB2MTBIMTN6Ii8%2BPC9zdmc%2B&amp;logoColor=white">
+  <img alt="Platform: macOS" src="https://img.shields.io/badge/platform-macOS-356650?style=for-the-badge&amp;logo=apple&amp;logoColor=white">
+  <img alt="Platform: Linux" src="https://img.shields.io/badge/platform-Linux-356650?style=for-the-badge&amp;logo=linux&amp;logoColor=white">
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> &middot;
+  <a href="#screenshots">Screenshots</a> &middot;
+  <a href="#student-how-to">Student how-to</a> &middot;
+  <a href="#student-setup">Student setup</a> &middot;
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -76,7 +83,7 @@ The offline guide is available from your profile under **Settings → How to**.
 
 ## Student setup
 
-1. Download the archive for your operating system and processor from [GitHub Releases](https://github.com/Shaswata28/StudyMate/releases) when it is available. Extract the entire folder.
+1. Download the archive for your operating system and processor from [GitHub Releases](https://github.com/Shaswata28/StudyMate/releases) and extract the entire folder.
 2. Open `StudyMate.exe` on Windows or run `./StudyMate` from the extracted folder on macOS or Linux. Keep the launcher open while studying.
 3. Create a local profile with your display name. Study level, field of study, and learning preferences are optional.
 4. Open **Settings → Local setup**. Choose **Set up Ollama & model** or **Download & use**, depending on your setup status. Start with Compact on lower-memory devices.
@@ -135,7 +142,7 @@ npm run dev
 
 Open `http://localhost:3000`. The API reference opens at `http://127.0.0.1:8000/docs`. The backend has working defaults. Use [backend/.env.example](backend/.env.example) as a reference if you need to override them.
 
-To build the student workspace locally, set `STUDYMATE_RELEASE=1` and run `npm run build` in `frontend`. Then run `python backend/student_launcher.py` from the repository root with the backend environment active. Tagged workflow runs package the same launcher for the supported platforms and create a draft GitHub release. [Student release workflow](.github/workflows/student-release.yml)
+To build the student workspace locally, set `STUDYMATE_RELEASE=1` and run `npm run build` in `frontend`. Then run `python backend/student_launcher.py` from the repository root with the backend environment active. Tagged workflow runs package the same launcher for the supported platforms and publish a GitHub release after all platform builds pass. [Student release workflow](.github/workflows/student-release.yml)
 
 StudyMate was created by [Shaswata28](https://github.com/Shaswata28). Report problems on [GitHub Issues](https://github.com/Shaswata28/StudyMate/issues).
 
