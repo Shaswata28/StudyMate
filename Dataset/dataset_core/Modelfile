@@ -1,0 +1,33 @@
+# 1. Path to your GGUF file
+# Ensure this matches the filename you created in Part 3
+FROM ./studymate_3b_q4_k_m.gguf
+
+# 2. ChatML Template (Required for Qwen 2.5)
+# This handles the specific <|im_start|> tokens used during training
+TEMPLATE """{{ if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}{{ if .Prompt }}<|im_start|>user
+{{ .Prompt }}<|im_end|>
+{{ end }}<|im_start|>assistant
+{{ .Response }}<|im_end|>"""
+
+# 3. Default System Prompt (The StudyMate Persona)
+# We set a default "General" profile so the model behaves correctly even without custom inputs.
+SYSTEM """You are StudyMate. 
+[PROFILE]
+- Subject: General
+- Grade: Bachelor
+
+You are an intelligent, patient, and structured academic tutor. Your goal is to help the user understand concepts clearly using examples, visual breakdowns, and step-by-step logic. Maintain an encouraging and professional tone."""
+
+# 4. Parameters
+# Stop tokens prevent the model from hallucinating new user turns
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+
+# Temperature: 0.7 is the sweet spot for teaching (creative but factual)
+PARAMETER temperature 0.7
+
+# Context Window: Qwen handles large context well. 
+# 8192 allows for long chat history (StudyMate "Context Rich" features).
+PARAMETER num_ctx 8192

@@ -1,180 +1,124 @@
-# StudyMate 📚🤖
+﻿# StudyMate
 
-An AI-powered study assistant that provides personalized academic support using locally-hosted AI models. Built with React, FastAPI, and Ollama for privacy-focused, offline-capable learning assistance.
+**v1.0.0** · An offline-first study workspace for Windows, macOS, and Linux.
 
-## ✨ Features
+StudyMate runs a local tutor on your computer and opens the workspace in your browser. Create a local profile, organize notes by course, and turn conversations and materials into diagrams, flashcards, and quizzes. You can study offline after downloading the models you want.
 
-- **Personalized AI Tutoring** - Adapts responses based on your academic level, subject, and learning preferences
-- **Course Management** - Organize study materials by course with dedicated chat contexts
-- **RAG-Powered Responses** - Retrieves relevant course materials to provide accurate, contextual answers
-- **Document Processing** - Upload PDFs and images for AI-powered analysis and extraction
-- **Voice Input** - Speech-to-text support using Web Speech API
-- **Multi-Turn Conversations** - Maintains context across chat sessions
-- **Dark/Light Theme** - Comfortable studying in any environment
-- **Fully Local AI** - All AI processing runs locally via Ollama for privacy and offline use
+[Student setup](#student-setup) · [Student how-to](#student-how-to) · [Features](#features) · [Screenshots](#screenshots) · [Contributing](#contributing)
 
-## 🏗️ Architecture
+![StudyMate welcome page with an overview of its local study tools](Screenshots/Light/welcome.png)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Frontend (React)                        │
-│              Vite + TypeScript + TailwindCSS + Radix UI         │
-└─────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Node.js Express Server                       │
-│                    (API Proxy & Static Files)                   │
-└─────────────────────────────────────────────────────────────────┘
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   Python Backend (FastAPI)                      │
-│         Auth • Chat • Courses • RAG • Intent Classification     │
-└─────────────────────────────────────────────────────────────────┘
-                    │                           │
-                    ▼                           ▼
-┌───────────────────────────┐     ┌───────────────────────────────┐
-│      AI Brain Service     │     │         Supabase              │
-│         (Ollama)          │     │   PostgreSQL + Auth + Vector  │
-│  • StudyMate-core (Chat)  │     │                               │
-│  • qwen2.5vl (Vision)     │     │                               │
-│  • mxbai-embed (RAG)      │     │                               │
-└───────────────────────────┘     └───────────────────────────────┘
-```
+## Student setup
 
-## 🚀 Quick Start
+1. Download the archive for your operating system and processor from [GitHub Releases](https://github.com/Shaswata28/StudyMate/releases) when it is available. Extract the entire folder.
+2. Open `StudyMate.exe` on Windows or run `./StudyMate` from the extracted folder on macOS or Linux. Keep the launcher open while studying.
+3. Create a local profile with your display name. Study level, field of study, and learning preferences are optional.
+4. Open **Settings → Local setup**. Choose **Set up Ollama & model** or **Download & use**, depending on your setup status. Start with Compact on lower-memory devices.
 
-### Prerequisites
+Student archives bundle the frontend and backend. Ollama and the tutor model are set up separately. The release workflow targets Windows x64, macOS on Apple silicon and Intel, and Linux x64 and ARM64. Student executables are unsigned.
 
-- Python 3.8+
-- Node.js 18+
-- [Ollama](https://ollama.ai/)
-- [Supabase](https://supabase.com/) account
+| Tutor tier | Model | Approximate download |
+| --- | --- | ---: |
+| Compact | Qwen3.5 0.8B | 1.0 GB |
+| Balanced | Qwen3.5 2B | 1.9 GB |
+| More capable | Qwen3.5 4B | 3.3–4.0 GB |
 
-### Installation
+Automatic Ollama setup supports Windows and Linux on x64 and ARM64, and macOS on Apple silicon. On Intel Macs, use an existing Ollama installation. For branching flowcharts, StudyMate recommends Balanced if the device can run it.
 
-```bash
-# Automated (recommended)
-./install.sh          # Linux/macOS
-install.bat           # Windows
-python install_dependencies.py  # All platforms
+## Student how-to
 
-# Manual
-pnpm install                              # Frontend
-cd python-backend && pip install -r requirements.txt  # Backend
-cd ai-brain && pip install -r requirements.txt        # AI Brain
-```
+| I want to… | Steps |
+| --- | --- |
+| Draw a flowchart in chat | Open a course and ask “Draw a flowchart showing how a Python web framework handles a browser request.” The tutor can draw it directly in the reply. Choose **Save diagram** to keep it. |
+| Diagram my notes | Open **Materials**, tick a **Ready** file, and choose **Diagram from source**. Pick **Flowchart** for steps and decisions or **Sequence diagram** for interactions, then **Generate diagram**. |
+| Export a drawing | Open **Materials → Created**, select your saved diagram, then choose **SVG** or **PNG**. |
+| Make flashcards or a quiz | Tick your **Ready** notes in **Materials → Create study items**, or choose **Study items** under a reply that cites your notes. Select **Flashcards** or **Multiple-choice quiz**, then **Generate**. |
+| Practice later | Open **Materials → Created → Flashcards and quizzes**. For scheduled card review, open **Study overview → Flashcards due today**. |
 
-### Configuration
+The offline guide is available from your profile under **Settings → How to**.
 
-1. Copy environment files:
-```bash
-cp .env.example .env
-cp python-backend/.env.example python-backend/.env
-```
+## Features
 
-2. Add your Supabase credentials to both `.env` files
+| Feature | What you can do |
+| --- | --- |
+| Course tutor | Start a course chat, ask follow-up questions, open cited source passages, and bookmark replies. |
+| Study materials | Drop multiple PDFs, text files, Markdown, or images into Materials. Follow background processing and use sources once they show **Ready**. |
+| Diagrams | Ask for a diagram in chat or create one from a reply or selected sources. Save flowcharts and sequence diagrams under **Created**, edit the Mermaid, and export SVG or PNG. |
+| Study tools | Create editable flashcards and multiple-choice quizzes from source material. Open the supporting excerpt after a missed answer and review cards due today from Study overview. |
+| Voice | Dictate using supported browser on-device recognition or Whisper. Read replies aloud using system voices or the optional offline Kokoro English voice. |
+| Workspace | Switch between light and dark themes, manage learning preferences, and resume recent courses from Study overview. |
 
-3. Pull Ollama models:
-```bash
-ollama pull qwen2.5vl:3b
-ollama pull mxbai-embed-large
-ollama create Studymate-core -f Modelfile.updated
-```
+Text PDFs, TXT, and Markdown can be indexed locally. For scanned PDFs and images, install Tesseract and make it available on your PATH. Keyword search works with the built-in index. For optional semantic retrieval, pull an embedding model such as `all-minilm:22m`, set `EMBEDDING_MODEL=all-minilm:22m`, and restart StudyMate. New uploads use that model during indexing.
 
-### Running
+For offline dictation, **Settings → Local setup → Voice input** can download the Windows x64 Whisper runtime and Tiny English model. On other platforms, install `whisper-cli` first. To use Kokoro, open **Local setup → Read aloud** and select **Download Kokoro**.
 
-```bash
-# Terminal 1: AI Brain (port 8001)
-cd ai-brain && python brain.py
+## Screenshots
 
-# Terminal 2: Python Backend (port 8000)
-cd python-backend && uvicorn main:app --reload
+| Study overview | Course chat |
+| --- | --- |
+| ![Study overview with four demo courses and flashcards due today](Screenshots/Light/study-overview.png) | ![Light-mode course chat with an inline flowchart and the materials sidebar](Screenshots/Light/course-chat.png) |
 
-# Terminal 3: Frontend (port 8080)
-pnpm dev
-```
+| Diagram editor | Flashcard review |
+| --- | --- |
+| ![Saved sequence diagram with editable Mermaid and export controls](Screenshots/Light/diagram-editor.png) | ![Flashcard answer with explanation and recall controls](Screenshots/Light/flashcard-review.png) |
 
-Open http://localhost:8080
+<details>
+<summary>Dark-mode screenshots</summary>
 
-## 📁 Project Structure
+| Course chat | Source preview |
+| --- | --- |
+| ![Dark-mode course chat showing a flowchart](Screenshots/Dark/course-chat.png) | ![Course chat alongside a cited source excerpt](Screenshots/Dark/source-preview.png) |
 
-```
-studymate/
-├── client/                 # React frontend
-│   ├── components/         # UI components (Chat, Sidebar, Modals)
-│   ├── pages/              # Route pages (Dashboard, Login, Signup)
-│   └── lib/                # Utilities and API client
-├── python-backend/         # FastAPI backend
-│   ├── routers/            # API endpoints (auth, chat, courses)
-│   ├── services/           # Business logic (AI, RAG, context)
-│   └── models/             # Pydantic schemas
-├── ai-brain/               # Local AI service (Ollama orchestration)
-├── server/                 # Node.js Express proxy
-├── Dataset/                # Training data for fine-tuning
-└── Documentation/          # Project docs
+| Quiz feedback | Profile settings |
+| --- | --- |
+| ![Quiz feedback with the answer, evidence, and next review date](Screenshots/Dark/quiz-feedback.png) | ![Local profile settings in dark mode](Screenshots/Dark/profile-settings.png) |
+
+</details>
+
+## Local data
+
+StudyMate stores its profile, preferences, courses, chats, and indexes in local SQLite. New original materials are kept in the matching course folder under `courses/<course-id>/materials/`. The app serves the student workspace on a loopback address.
+
+| System | Default data directory |
+| --- | --- |
+| Windows | `%LOCALAPPDATA%\StudyMate` |
+| macOS | `~/Library/Application Support/StudyMate` |
+| Linux | `$XDG_DATA_HOME/studymate` or `~/.local/share/studymate` |
+
+Use `STUDYMATE_DATA_DIR` to select a different directory. To upgrade, replace the extracted application folder and keep the app-data directory.
+
+## Contributing
+
+The workspace uses Next.js and TypeScript for the frontend, FastAPI for the backend, SQLite for storage, and Ollama for local inference. Release builds use Node.js 22 and Python 3.12.
+
+Install the backend dependencies from the repository root with Python 3.12:
+
+```sh
+cd backend
+python -m venv venv
+# Activate venv before installing dependencies.
+python -m pip install -r requirements.txt
 ```
 
+Install frontend dependencies in a second terminal:
 
-## 🤖 AI Models
-
-| Model | Purpose | Size |
-|-------|---------|------|
-| StudyMate-core | Main chat model (fine-tuned) | ~1.8GB |
-| qwen2.5vl:3b | Vision/OCR for PDFs & images | ~2GB |
-| mxbai-embed-large | Text embeddings for RAG | ~670MB |
-
-## 🔌 API Endpoints
-
-### Authentication
-- `POST /api/auth/signup` - Create account
-- `POST /api/auth/login` - Login
-- `POST /api/auth/logout` - Logout
-- `GET /api/auth/session` - Get session
-
-### Chat
-- `POST /api/chat` - Global chat
-- `POST /api/chat/{course_id}` - Course-specific chat
-
-### Courses
-- `GET /api/courses` - List courses
-- `POST /api/courses` - Create course
-- `DELETE /api/courses/{id}` - Delete course
-- `POST /api/courses/{id}/materials` - Upload materials
-
-### Academic Profile
-- `GET /api/academic` - Get profile
-- `POST /api/academic` - Create profile
-- `PUT /api/academic` - Update profile
-
-## 🛠️ Tech Stack
-
-**Frontend:** React 18, TypeScript, Vite, TailwindCSS, Radix UI, React Query, Framer Motion
-
-**Backend:** FastAPI, Supabase (PostgreSQL + Auth + Vector), Pydantic
-
-**AI:** Ollama, Custom fine-tuned models, RAG with vector embeddings
-
-## 🧪 Development
-
-```bash
-pnpm dev          # Start frontend dev server
-pnpm test         # Run frontend tests
-pnpm typecheck    # TypeScript validation
-pnpm format.fix   # Format code
-
-# Backend tests
-cd python-backend && pytest
+```sh
+cd frontend
+npm ci
 ```
 
-## 📖 Documentation
+On Windows, run `.\run_dev.bat` from the repository root to start both development servers. On macOS or Linux, run the following from the two terminals:
 
-See the `Documentation/` folder for detailed guides:
-- [Installation Guide](Documentation/INSTALLATION.md)
-- [Backend Flow](Documentation/BACKEND_FLOW_EXPLAINED.md)
-- [RAG Verification](Documentation/RAG_VERIFICATION_GUIDE.md)
+```sh
+# From backend, with the virtual environment active
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
----
+# From frontend
+npm run dev
+```
 
-Built with ❤️ for students who want AI-powered study assistance without compromising privacy.
+Open `http://localhost:3000`. The API reference opens at `http://127.0.0.1:8000/docs`. The backend has working defaults. Use [backend/.env.example](backend/.env.example) as a reference if you need to override them.
+
+To build the student workspace locally, set `STUDYMATE_RELEASE=1` and run `npm run build` in `frontend`. Then run `python backend/student_launcher.py` from the repository root with the backend environment active. Tagged workflow runs package the same launcher for the supported platforms and create a draft GitHub release. [Student release workflow](.github/workflows/student-release.yml)
+
+StudyMate was created by [Shaswata28](https://github.com/Shaswata28). Report problems on [GitHub Issues](https://github.com/Shaswata28/StudyMate/issues) and see the [Feature Plan](feature%20plan.md) for planned work.
