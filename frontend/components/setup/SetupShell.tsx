@@ -6,7 +6,7 @@ export default function SetupShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-line">
         <div className="mx-auto flex h-[84px] max-w-[1320px] items-center justify-between gap-3 px-4 sm:px-12 lg:px-16">
-          <Link href="/" className="font-display text-3xl leading-none tracking-tight sm:text-4xl">StudyMate</Link>
+          <Link href="/" className="inline-flex items-center gap-2 font-display text-3xl leading-none tracking-tight sm:text-4xl"><img src="/studymate-icon.webp" alt="" width={36} height={36} className="size-9 shrink-0 object-contain" />StudyMate</Link>
         </div>
       </header>
       {children}

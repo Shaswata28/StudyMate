@@ -24,7 +24,7 @@ export default function Sidebar({ courses, profileName, avatar, onSelectCourse, 
   return (
     <aside aria-label="Course navigation" className="flex h-full w-[min(18rem,85vw)] shrink-0 flex-col border-r border-line bg-surface">
       <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-line px-4">
-        <span className="font-display text-[1.7rem] leading-none tracking-tight">StudyMate</span>
+        <span className="flex items-center gap-2 font-display text-[1.7rem] leading-none tracking-tight"><img src="/studymate-icon.webp" alt="" width={36} height={36} className="size-9 shrink-0 object-contain" />StudyMate</span>
       </div>
       <nav aria-label="Study tools" className="space-y-1 p-3">
         <button type="button" onClick={() => setActiveCourse(null)} aria-current={!activeCourse ? "page" : undefined}

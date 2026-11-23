@@ -3,6 +3,7 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
+  icons: { icon: { url: "/studymate-icon.webp", type: "image/webp" } },
   title: "StudyMate - AI-Powered Academic Assistant",
   description: "Personalized AI study tutor with course material retrieval and LaTeX support.",
 };

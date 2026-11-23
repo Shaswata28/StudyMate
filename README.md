@@ -1,41 +1,26 @@
-﻿# StudyMate
+<p align="center">
+  <img src="frontend/public/studymate-icon.webp" width="120" alt="StudyMate app icon">
+</p>
 
-**v1.0.0** · An offline-first study workspace for Windows, macOS, and Linux.
+<h1 align="center">StudyMate</h1>
 
-StudyMate runs a local tutor on your computer and opens the workspace in your browser. Create a local profile, organize notes by course, and turn conversations and materials into diagrams, flashcards, and quizzes. You can study offline after downloading the models you want.
+<p align="center">An offline-first study workspace for Windows, macOS, and Linux.</p>
 
-[Student setup](#student-setup) · [Student how-to](#student-how-to) · [Features](#features) · [Screenshots](#screenshots) · [Contributing](#contributing)
+<p align="center">
+  <img alt="Version 1.0.1" src="https://img.shields.io/badge/version-1.0.1-356650?style=for-the-badge">
+  <img alt="Local models with Ollama" src="https://img.shields.io/badge/local_models-Ollama-356650?style=for-the-badge">
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-356650?style=for-the-badge"></a>
+</p>
 
-![StudyMate welcome page with an overview of its local study tools](Screenshots/Light/welcome.png)
+<p align="center">
+  <a href="#features">Features</a> ?
+  <a href="#screenshots">Screenshots</a> ?
+  <a href="#student-how-to">Student how-to</a> ?
+  <a href="#student-setup">Student setup</a> ?
+  <a href="#contributing">Contributing</a>
+</p>
 
-## Student setup
-
-1. Download the archive for your operating system and processor from [GitHub Releases](https://github.com/Shaswata28/StudyMate/releases) when it is available. Extract the entire folder.
-2. Open `StudyMate.exe` on Windows or run `./StudyMate` from the extracted folder on macOS or Linux. Keep the launcher open while studying.
-3. Create a local profile with your display name. Study level, field of study, and learning preferences are optional.
-4. Open **Settings → Local setup**. Choose **Set up Ollama & model** or **Download & use**, depending on your setup status. Start with Compact on lower-memory devices.
-
-Student archives bundle the frontend and backend. Ollama and the tutor model are set up separately. The release workflow targets Windows x64, macOS on Apple silicon and Intel, and Linux x64 and ARM64. Student executables are unsigned.
-
-| Tutor tier | Model | Approximate download |
-| --- | --- | ---: |
-| Compact | Qwen3.5 0.8B | 1.0 GB |
-| Balanced | Qwen3.5 2B | 1.9 GB |
-| More capable | Qwen3.5 4B | 3.3–4.0 GB |
-
-Automatic Ollama setup supports Windows and Linux on x64 and ARM64, and macOS on Apple silicon. On Intel Macs, use an existing Ollama installation. For branching flowcharts, StudyMate recommends Balanced if the device can run it.
-
-## Student how-to
-
-| I want to… | Steps |
-| --- | --- |
-| Draw a flowchart in chat | Open a course and ask “Draw a flowchart showing how a Python web framework handles a browser request.” The tutor can draw it directly in the reply. Choose **Save diagram** to keep it. |
-| Diagram my notes | Open **Materials**, tick a **Ready** file, and choose **Diagram from source**. Pick **Flowchart** for steps and decisions or **Sequence diagram** for interactions, then **Generate diagram**. |
-| Export a drawing | Open **Materials → Created**, select your saved diagram, then choose **SVG** or **PNG**. |
-| Make flashcards or a quiz | Tick your **Ready** notes in **Materials → Create study items**, or choose **Study items** under a reply that cites your notes. Select **Flashcards** or **Multiple-choice quiz**, then **Generate**. |
-| Practice later | Open **Materials → Created → Flashcards and quizzes**. For scheduled card review, open **Study overview → Flashcards due today**. |
-
-The offline guide is available from your profile under **Settings → How to**.
+StudyMate runs a local tutor on your computer and opens the workspace in your browser. Organize notes and chats by course, turn your materials into diagrams and flashcards, and study offline after downloading your models.
 
 ## Features
 
@@ -53,6 +38,8 @@ Text PDFs, TXT, and Markdown can be indexed locally. For scanned PDFs and images
 For offline dictation, **Settings → Local setup → Voice input** can download the Windows x64 Whisper runtime and Tiny English model. On other platforms, install `whisper-cli` first. To use Kokoro, open **Local setup → Read aloud** and select **Download Kokoro**.
 
 ## Screenshots
+
+![StudyMate welcome page](Screenshots/Light/welcome.png)
 
 | Study overview | Course chat |
 | --- | --- |
@@ -74,6 +61,35 @@ For offline dictation, **Settings → Local setup → Voice input** can download
 | ![Quiz feedback with the answer, evidence, and next review date](Screenshots/Dark/quiz-feedback.png) | ![Local profile settings in dark mode](Screenshots/Dark/profile-settings.png) |
 
 </details>
+
+## Student how-to
+
+| I want to… | Steps |
+| --- | --- |
+| Draw a flowchart in chat | Open a course and ask “Draw a flowchart showing how a Python web framework handles a browser request.” The tutor can draw it directly in the reply. Choose **Save diagram** to keep it. |
+| Diagram my notes | Open **Materials**, tick a **Ready** file, and choose **Diagram from source**. Pick **Flowchart** for steps and decisions or **Sequence diagram** for interactions, then **Generate diagram**. |
+| Export a drawing | Open **Materials → Created**, select your saved diagram, then choose **SVG** or **PNG**. |
+| Make flashcards or a quiz | Tick your **Ready** notes in **Materials → Create study items**, or choose **Study items** under a reply that cites your notes. Select **Flashcards** or **Multiple-choice quiz**, then **Generate**. |
+| Practice later | Open **Materials → Created → Flashcards and quizzes**. For scheduled card review, open **Study overview → Flashcards due today**. |
+
+The offline guide is available from your profile under **Settings → How to**.
+
+## Student setup
+
+1. Download the archive for your operating system and processor from [GitHub Releases](https://github.com/Shaswata28/StudyMate/releases) when it is available. Extract the entire folder.
+2. Open `StudyMate.exe` on Windows or run `./StudyMate` from the extracted folder on macOS or Linux. Keep the launcher open while studying.
+3. Create a local profile with your display name. Study level, field of study, and learning preferences are optional.
+4. Open **Settings → Local setup**. Choose **Set up Ollama & model** or **Download & use**, depending on your setup status. Start with Compact on lower-memory devices.
+
+Student archives bundle the frontend and backend. Ollama and the tutor model are set up separately. The release workflow targets Windows x64, macOS on Apple silicon and Intel, and Linux x64 and ARM64. Student executables are unsigned.
+
+| Tutor tier | Model | Approximate download |
+| --- | --- | ---: |
+| Compact | Qwen3.5 0.8B | 1.0 GB |
+| Balanced | Qwen3.5 2B | 1.9 GB |
+| More capable | Qwen3.5 4B | 3.3–4.0 GB |
+
+Automatic Ollama setup supports Windows and Linux on x64 and ARM64, and macOS on Apple silicon. On Intel Macs, use an existing Ollama installation. For branching flowcharts, StudyMate recommends Balanced if the device can run it.
 
 ## Local data
 
@@ -121,4 +137,8 @@ Open `http://localhost:3000`. The API reference opens at `http://127.0.0.1:8000/
 
 To build the student workspace locally, set `STUDYMATE_RELEASE=1` and run `npm run build` in `frontend`. Then run `python backend/student_launcher.py` from the repository root with the backend environment active. Tagged workflow runs package the same launcher for the supported platforms and create a draft GitHub release. [Student release workflow](.github/workflows/student-release.yml)
 
-StudyMate was created by [Shaswata28](https://github.com/Shaswata28). Report problems on [GitHub Issues](https://github.com/Shaswata28/StudyMate/issues) and see the [Feature Plan](feature%20plan.md) for planned work.
+StudyMate was created by [Shaswata28](https://github.com/Shaswata28). Report problems on [GitHub Issues](https://github.com/Shaswata28/StudyMate/issues).
+
+## License
+
+StudyMate is available under the [MIT License](LICENSE).

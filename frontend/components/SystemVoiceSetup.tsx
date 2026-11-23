@@ -17,6 +17,7 @@ export default function SystemVoiceSetup({ platform }: { platform?: string }) {
   const cache = useQueryClient();
   const preview = useRef<AbortController | null>(null);
   const download = useMutation({
+    mutationKey: ["local-download"],
     mutationFn: api.downloadKokoro,
     onSuccess: () => {
       cache.setQueryData(["kokoro"], { supported: true, installed: true, progress: null });

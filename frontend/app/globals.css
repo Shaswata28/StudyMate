@@ -195,3 +195,11 @@ body {
   .tutorial-example[open] img { animation: tutorial-reveal 220ms ease-out; }
   @keyframes tutorial-reveal { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  .onboarding-enter { animation: onboarding-enter 320ms ease-out both; }
+  @keyframes onboarding-enter {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}

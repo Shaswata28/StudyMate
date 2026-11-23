@@ -19,6 +19,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const client = useQueryClient();
   const profile = useQuery({ queryKey: ["profile"], queryFn: api.getProfile, retry: false });
+  const [termsChecked, setTermsChecked] = useState<boolean>();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -68,11 +69,11 @@ export default function OnboardingPage() {
 
   return (
     <SetupShell>
-      <main className="study-enter mx-auto w-full max-w-xl px-6 pb-12 pt-9 sm:pt-12">
+      <main className="onboarding-enter mx-auto w-full max-w-xl px-6 pb-12 pt-9 sm:pt-12">
         <Link href="/" className="inline-flex items-center gap-2 text-sm text-accent hover:underline">
           <ArrowLeft aria-hidden className="size-4" /> Back to welcome
         </Link>
-        <p className="mt-4 text-xs font-medium text-accent">Step 1 of 2 ? Profile</p>
+        <p className="mt-4 text-xs font-medium text-accent">Step 1 of 3 / Profile</p>
         <h1 className="mt-2 font-display text-5xl leading-none tracking-tight sm:text-6xl">Set up your workspace</h1>
         <p className="mt-3 flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
           <HardDrive aria-hidden className="size-4 shrink-0 text-accent" /> Your profile is saved on this computer.
@@ -121,15 +122,15 @@ export default function OnboardingPage() {
             </details>
 
             <label className="flex items-start gap-2 border-t border-line pt-4 text-sm">
-              <input type="checkbox" name="terms" required defaultChecked={profile.data?.terms_accepted}
+              <input type="checkbox" name="terms" required checked={termsChecked ?? !!profile.data?.terms_accepted} onChange={(event) => setTermsChecked(event.target.checked)}
                 className="mt-1 size-4 shrink-0 accent-[var(--accent)]" />
-              <span>I agree to the <Link href="/terms" target="_blank" rel="noreferrer" className="text-accent underline underline-offset-2">Terms and conditions</Link>.</span>
+              <span>I agree to the <Link href="/onboarding/terms" target="_blank" rel="noopener noreferrer" aria-label="Terms and conditions (opens in a new tab)" className="text-accent underline underline-offset-2">Terms and conditions</Link>.</span>
             </label>
             {error && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p>}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
               <p className="text-xs text-neutral-600 dark:text-neutral-300">You can change these later in Settings.</p>
-              <button disabled={saving} className="study-action" type="submit">
-                {saving ? "Saving…" : "Continue to device setup"} <ArrowRight aria-hidden className="size-4" />
+              <button disabled={saving || !(termsChecked ?? profile.data?.terms_accepted)} className="study-action" type="submit">
+                {saving ? "Saving…" : "Continue to tutor setup"} <ArrowRight aria-hidden className="size-4" />
               </button>
             </div>
           </form>
